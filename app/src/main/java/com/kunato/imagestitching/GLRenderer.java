@@ -3,7 +3,7 @@ package com.kunato.imagestitching;
 import android.graphics.SurfaceTexture;
 import android.location.Location;
 import android.opengl.GLES11Ext;
-import android.opengl.GLES20;
+import android.opengl.GLES31;
 import android.opengl.GLSurfaceView;
 import android.util.Log;
 
@@ -57,6 +57,8 @@ public class GLRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
     public int mHeight;
     public float[] mHomography = {1,0,0,0,1,0,0,0,1};
     private boolean readInProgress = false;
+    private StitchObject mStitch;
+
     GLRenderer(MainController view) {
         mView = view;
     }
@@ -88,10 +90,11 @@ public class GLRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
         mTextureProcessed = new SurfaceTexture(mCanvasObjectProcessed.getTexturePos()[0]);
         mTextureNormal.setOnFrameAvailableListener(this);
         mTextureProcessed.setOnFrameAvailableListener(this);
-        GLES20.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+        mStitch = new StitchObject(this);
+        GLES31.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         //(x (vertical),(horizontal)y,z)
-        GLES20.glEnable(GLES20.GL_BLEND);
-        GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA);
+        GLES31.glEnable(GLES31.GL_BLEND);
+        GLES31.glBlendFunc(GLES31.GL_SRC_ALPHA, GLES31.GL_ONE_MINUS_SRC_ALPHA);
         prepareARObject();
     }
     public void prepareARObject(){
@@ -122,8 +125,8 @@ public class GLRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
             mStartTime = System.nanoTime();
         }
 
-        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
-        GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT);
+        GLES31.glClear(GLES31.GL_COLOR_BUFFER_BIT);
+        GLES31.glClear(GLES31.GL_DEPTH_BUFFER_BIT);
 
 //        Matrix.multiplyMM(mModelViewMatrix,0, mRotationMatrix,0, mSpericalModelMatrix,0);
 //        Matrix.multiplyMM(mMVPMatrix, 0, mProjectionMatrix,0, mModelViewMatrix,0);
@@ -134,6 +137,7 @@ public class GLRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
 //        GLU.gluProject(123.4349f, 0, -169.89357f, mRotationMatrix, 0, mProjectionMatrix, 0, viewport,0,out,0);
 //        Log.d("gluProject", "" + Arrays.toString(out));
         //draws
+        mStitch.draw();
         synchronized(this) {
             if ( mUpdateST ) {
                 //choose whice texture to update
@@ -147,15 +151,15 @@ public class GLRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
 //        mCanvasObject.draw(mMVPMatrix);
         if(readInProgress){
             mSphere.draw(mRotationMatrix,mProjectionMatrix,1.0f);
-            GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
-            GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT);
+            GLES31.glClear(GLES31.GL_COLOR_BUFFER_BIT);
+            GLES31.glClear(GLES31.GL_DEPTH_BUFFER_BIT);
             mSphere.readPixel = false;
             readInProgress = false;
         }
         //Test mRotation
         mSphere.draw(mRotationMatrix,mProjectionMatrix,1.0f);
-        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
-        GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT);
+        GLES31.glClear(GLES31.GL_COLOR_BUFFER_BIT);
+        GLES31.glClear(GLES31.GL_DEPTH_BUFFER_BIT);
 
         mSphere.mRealRender = true;
 
@@ -164,7 +168,7 @@ public class GLRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
         if(mUsingOldMatrix){
             mSphere.draw(mPreviousRotMatrix,mProjectionMatrix,mFadeAlpha);
             if(mFadeAlpha > 0.0){
-                mFadeAlpha -= 1f/10f;
+                mFadeAlpha -= 1f/20f;
             }
             if(mFadeAlpha < 0.3){
                 for(int i = 0 ; i < mARObject.size() ; i++)
@@ -174,7 +178,7 @@ public class GLRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
         }
         else{
             if(mFadeAlpha < 1.0){
-                mFadeAlpha += 1f/10f;
+                mFadeAlpha += 1f/20f;
             }
             mSphere.draw(mRotationMatrix,mProjectionMatrix,mFadeAlpha);
             for(int i = 0 ; i < mARObject.size() ; i++)
@@ -182,15 +186,15 @@ public class GLRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
         }
         mSphere.mRealRender = false;
 
-        GLES20.glFlush();
+        GLES31.glFlush();
     }
 
     public void onSurfaceChanged ( GL10 unused, int width, int height ) {
         mWidth = width;
         mHeight = height;
-        GLES20.glViewport(0, 0, mWidth, mHeight);
+        GLES31.glViewport(0, 0, mWidth, mHeight);
         mSphere = new SphereObject(this,mWidth,mHeight);
-        GLES20.glRenderbufferStorage(GLES20.GL_RENDERBUFFER, GLES11Ext.GL_RGBA8_OES,mWidth,mHeight);
+        GLES31.glRenderbufferStorage(GLES31.GL_RENDERBUFFER, GLES11Ext.GL_RGBA8_OES,mWidth,mHeight);
         Log.v("GL", "Screen" + String.format("(Width:Height)[%d,%d]", mWidth,mHeight));
 
         //48=zoom1.5//72=zoom1

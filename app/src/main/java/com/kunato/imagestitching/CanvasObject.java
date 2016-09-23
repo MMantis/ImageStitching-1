@@ -2,7 +2,7 @@ package com.kunato.imagestitching;
 
 import android.content.Context;
 import android.opengl.GLES11Ext;
-import android.opengl.GLES20;
+import android.opengl.GLES31;
 import android.util.Log;
 
 import java.nio.ByteBuffer;
@@ -59,8 +59,8 @@ public class CanvasObject {
                     "void main() {\n" +
                     "vec3 coord = vec3(texCoord.x,texCoord.y,1.0);" +
                     "vec4 color = texture2D(sTexture,convertToTexCoord(inverse(homography)*coord));\n" +
-                    "float grayScale = dot(color.rgb, vec3(0.299, 0.587, 0.114));\n" +
-                    "gl_FragColor = vec4(grayScale, grayScale, grayScale, 1.0);\n" +
+                    "//float grayScale = dot(color.rgb, vec3(0.299, 0.587, 0.114));\n" +
+                    "gl_FragColor = color;\n" +
                     "}";
     private final String fss_int =
             "precision mediump float;\n" +
@@ -90,45 +90,45 @@ public class CanvasObject {
         mTextureCoord.put(textures);
         mTextureCoord.position(0);
         mProgram = Util.loadShader(vss, fss_ext);
-        GLES20.glGenTextures(1, mTexture, 0);
-        GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, mTexture[0]);
-        GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_MIRRORED_REPEAT);
-        GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_MIRRORED_REPEAT);
-        GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
-        GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
+        GLES31.glGenTextures(1, mTexture, 0);
+        GLES31.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, mTexture[0]);
+        GLES31.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES31.GL_TEXTURE_WRAP_S, GLES31.GL_MIRRORED_REPEAT);
+        GLES31.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES31.GL_TEXTURE_WRAP_T, GLES31.GL_MIRRORED_REPEAT);
+        GLES31.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES31.GL_TEXTURE_MIN_FILTER, GLES31.GL_LINEAR);
+        GLES31.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES31.GL_TEXTURE_MAG_FILTER, GLES31.GL_LINEAR);
     }
 
 
     public void draw(float[] mMVPMatrix,float[] mHomography){
-        GLES20.glUseProgram(mProgram);
-        int ph = GLES20.glGetAttribLocation(mProgram, "vPosition");
-        int tch = GLES20.glGetAttribLocation (mProgram, "vTexCoord" );
-        int th = GLES20.glGetUniformLocation(mProgram, "sTexture");
-        int homoh = GLES20.glGetUniformLocation(mProgram,"homography");
-        int widthh = GLES20.glGetUniformLocation(mProgram,"width");
-        int heighth = GLES20.glGetUniformLocation(mProgram,"height");
-        int mMVPMatrixHandle = GLES20.glGetUniformLocation(mProgram, "uMVPMatrix");
+        GLES31.glUseProgram(mProgram);
+        int ph = GLES31.glGetAttribLocation(mProgram, "vPosition");
+        int tch = GLES31.glGetAttribLocation (mProgram, "vTexCoord" );
+        int th = GLES31.glGetUniformLocation(mProgram, "sTexture");
+        int homoh = GLES31.glGetUniformLocation(mProgram,"homography");
+        int widthh = GLES31.glGetUniformLocation(mProgram,"width");
+        int heighth = GLES31.glGetUniformLocation(mProgram,"height");
+        int mMVPMatrixHandle = GLES31.glGetUniformLocation(mProgram, "uMVPMatrix");
 
-        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-        GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES,mTexture[0]);
-        GLES20.glUniform1i(th, 0);
-        GLES20.glUniformMatrix4fv(mMVPMatrixHandle, 1, false, mMVPMatrix, 0);
-        GLES20.glVertexAttribPointer(ph, COORD_PER_VERTEX, GLES20.GL_FLOAT, false, 4 * COORD_PER_VERTEX, mVertexCoord);
-        GLES20.glVertexAttribPointer(tch, COORD_PER_TEXTURE, GLES20.GL_FLOAT,false,4*COORD_PER_TEXTURE,mTextureCoord);
-        GLES20.glUniformMatrix3fv(homoh, 1, false, mHomography, 0);
-        GLES20.glUniform1f(heighth, 1);
-        GLES20.glUniform1f(widthh, 1);
-        GLES20.glEnableVertexAttribArray(ph);
-        GLES20.glEnableVertexAttribArray(tch);
+        GLES31.glActiveTexture(GLES31.GL_TEXTURE0);
+        GLES31.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES,mTexture[0]);
+        GLES31.glUniform1i(th, 0);
+        GLES31.glUniformMatrix4fv(mMVPMatrixHandle, 1, false, mMVPMatrix, 0);
+        GLES31.glVertexAttribPointer(ph, COORD_PER_VERTEX, GLES31.GL_FLOAT, false, 4 * COORD_PER_VERTEX, mVertexCoord);
+        GLES31.glVertexAttribPointer(tch, COORD_PER_TEXTURE, GLES31.GL_FLOAT,false,4*COORD_PER_TEXTURE,mTextureCoord);
+        GLES31.glUniformMatrix3fv(homoh, 1, false, mHomography, 0);
+        GLES31.glUniform1f(heighth, 1);
+        GLES31.glUniform1f(widthh, 1);
+        GLES31.glEnableVertexAttribArray(ph);
+        GLES31.glEnableVertexAttribArray(tch);
 
-        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
-        GLES20.glDisableVertexAttribArray(ph);
-        GLES20.glDisableVertexAttribArray(tch);
-        GLES20.glDisableVertexAttribArray(th);
+        GLES31.glDrawArrays(GLES31.GL_TRIANGLE_STRIP, 0, 4);
+        GLES31.glDisableVertexAttribArray(ph);
+        GLES31.glDisableVertexAttribArray(tch);
+        GLES31.glDisableVertexAttribArray(th);
     }
 
     public void deleteTex() {
-        GLES20.glDeleteTextures(1, mTexture, 0);
+        GLES31.glDeleteTextures(1, mTexture, 0);
     }
     public int[] getTexturePos(){
         return mTexture;

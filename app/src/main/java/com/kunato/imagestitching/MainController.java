@@ -244,7 +244,7 @@ public class MainController extends GLSurfaceView {
         mFactory = Factory.getFactory(this);
         mActivity = (Activity) context;
         mGLRenderer = mFactory.getGlRenderer();
-        setEGLContextClientVersion(2);
+        setEGLContextClientVersion(3);
         setEGLConfigChooser(8,8,8,8,16,8);
         setRenderer(mGLRenderer);
         setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);

@@ -45,7 +45,7 @@
 #pragma ide diagnostic ignored "ArrayIssue"
 #define EXPERIMENT 0
 #include "stitching.h"
-#define GRAPHCUT
+
 using namespace std;
 using namespace cv;
 using namespace cv::detail;
@@ -441,6 +441,7 @@ void threadTask(int msg){
 
 //need to re-done in some part
 void doComposition(float warped_image_scale,vector<CameraParams> cameras,vector<ImagePackage> &p_img,Ptr<ExposureCompensator> compensator,float work_scale,float compose_scale,int blend_type,Mat &result,Mat &area){
+	cv::FileStorage fs("/sdcard/stitch/position.yml", cv::FileStorage::WRITE);
 	double compose_work_aspect = compose_scale / work_scale;
 	Mat img_warped;
 	Mat dilated_mask, seam_mask;
@@ -571,8 +572,18 @@ void doComposition(float warped_image_scale,vector<CameraParams> cameras,vector<
             clock_t c_c5 = std::clock();
             __android_log_print(ANDROID_LOG_DEBUG,"C++ Composition","Timer Blender Create %lf",(double)(c_c5-c_c4)/CLOCKS_PER_SEC);
 		}
+		__android_log_print(ANDROID_LOG_DEBUG,"C++ Composition","Debug");
 		clock_t c_c6 = std::clock();
 		composer::feed(p_img[i].compose_image_warped, p_img[i].compose_mask_warped, p_img[i].compose_corner);
+		char warp_file_name[50];
+		char mask_file_name[50];
+		sprintf(mask_file_name,"/sdcard/stitch/mask%d.jpg",i);
+		sprintf(warp_file_name,"/sdcard/stitch/warped%d.jpg",i);
+		imwrite(warp_file_name,p_img[i].compose_image_warped);
+		imwrite(mask_file_name,p_img[i].compose_mask_warped);
+		fs << "c" << p_img[i].compose_corner;
+		fs << "s_x" << p_img[i].compose_image_warped.cols;
+		fs << "s_y" << p_img[i].compose_image_warped.rows;
 		clock_t c_c7 = std::clock();
 
         c_feed_total+=(double)(c_c7-c_c6);

@@ -25,7 +25,7 @@ import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.hardware.SensorManager;
 import android.location.Location;
-import android.opengl.GLES20;
+import android.opengl.GLES31;
 import android.opengl.GLUtils;
 import android.util.Log;
 
@@ -193,11 +193,11 @@ public class ARObject {
         mTranslationVector[2] = (float) Math.cos(DiffAngle) * -3;
     }
     public void loadGLTexture(final Context context, final int texture) {
-        GLES20.glGenTextures(1, this.mTextures, 0);
-        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, this.mTextures[0]);
-        GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR_MIPMAP_LINEAR);
-        GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
+        GLES31.glGenTextures(1, this.mTextures, 0);
+        GLES31.glActiveTexture(GLES31.GL_TEXTURE0);
+        GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, this.mTextures[0]);
+        GLES31.glTexParameterf(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_MIN_FILTER, GLES31.GL_LINEAR_MIPMAP_LINEAR);
+        GLES31.glTexParameterf(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_MAG_FILTER, GLES31.GL_LINEAR);
 //        mockTexImage2D(context,texture);
         genTextureFromText(context,mName);
     }
@@ -226,8 +226,8 @@ public class ARObject {
         bounds.left += (rect.width() - bounds.right) / 2.0f;
         bounds.top += (rect.height() - bounds.bottom) / 2.0f;
         canvas.drawText(text, bounds.left, bounds.top - textPaint.ascent(), textPaint);
-        GLUtils.texImage2D(GLES20.GL_TEXTURE_2D,0,bitmap,0);
-        GLES20.glGenerateMipmap(GLES20.GL_TEXTURE_2D);
+        GLUtils.texImage2D(GLES31.GL_TEXTURE_2D,0,bitmap,0);
+        GLES31.glGenerateMipmap(GLES31.GL_TEXTURE_2D);
         bitmap.recycle();
     }
 
@@ -236,42 +236,42 @@ public class ARObject {
     public void draw(float[] viewMatrix,float[] projectionMatrix) {
         if(!mCameraPositionSet)
             return;
-        GLES20.glUseProgram(mProgram);
+        GLES31.glUseProgram(mProgram);
 
-        mPositionHandle = GLES20.glGetAttribLocation(mProgram, "vPosition");
+        mPositionHandle = GLES31.glGetAttribLocation(mProgram, "vPosition");
 
-        mTextureCoordinateHandle = GLES20.glGetAttribLocation(mProgram, "a_TexCoordinate");
+        mTextureCoordinateHandle = GLES31.glGetAttribLocation(mProgram, "a_TexCoordinate");
 
-        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, this.mTextures[0]);
-        GLES20.glEnableVertexAttribArray(mPositionHandle);
-        GLES20.glVertexAttribPointer(mPositionHandle, ObjReader.COORD_PER_VERTEX, GLES20.GL_FLOAT, false, VERTEX_STRIDE, mVertexBuffer);
-        GLES20.glEnableVertexAttribArray(mTextureCoordinateHandle);
-        GLES20.glVertexAttribPointer(mTextureCoordinateHandle, ObjReader.COORD_PER_TEXTURE, GLES20.GL_FLOAT, false, TEXTURE_STRIDE, mTextureBuffer);
+        GLES31.glActiveTexture(GLES31.GL_TEXTURE0);
+        GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, this.mTextures[0]);
+        GLES31.glEnableVertexAttribArray(mPositionHandle);
+        GLES31.glVertexAttribPointer(mPositionHandle, ObjReader.COORD_PER_VERTEX, GLES31.GL_FLOAT, false, VERTEX_STRIDE, mVertexBuffer);
+        GLES31.glEnableVertexAttribArray(mTextureCoordinateHandle);
+        GLES31.glVertexAttribPointer(mTextureCoordinateHandle, ObjReader.COORD_PER_TEXTURE, GLES31.GL_FLOAT, false, TEXTURE_STRIDE, mTextureBuffer);
 
         // Set the active texture unit to texture unit 0.
-        mTextureHandle = GLES20.glGetUniformLocation(mProgram, "sTexture");
-        GLES20.glUniform1i(mTextureHandle, 0);
+        mTextureHandle = GLES31.glGetUniformLocation(mProgram, "sTexture");
+        GLES31.glUniform1i(mTextureHandle, 0);
         // get handle to shape's transformation matrix
-        mViewMatrixHandle = GLES20.glGetUniformLocation(mProgram, "uViewMatrix");
-        mProjectionMatrixHandle = GLES20.glGetUniformLocation(mProgram, "uProjectionMatrix");
-        mAdjustMatrixHandle = GLES20.glGetUniformLocation(mProgram, "uAdjustMatrix");
-        mTranslationVectorHandle = GLES20.glGetUniformLocation(mProgram, "uTranslationVec");
-        mRotationMatrixHandle = GLES20.glGetUniformLocation(mProgram, "uRotationMatrix");
-        mScaleMatrixHandle = GLES20.glGetUniformLocation(mProgram, "uScaleMatrix");
+        mViewMatrixHandle = GLES31.glGetUniformLocation(mProgram, "uViewMatrix");
+        mProjectionMatrixHandle = GLES31.glGetUniformLocation(mProgram, "uProjectionMatrix");
+        mAdjustMatrixHandle = GLES31.glGetUniformLocation(mProgram, "uAdjustMatrix");
+        mTranslationVectorHandle = GLES31.glGetUniformLocation(mProgram, "uTranslationVec");
+        mRotationMatrixHandle = GLES31.glGetUniformLocation(mProgram, "uRotationMatrix");
+        mScaleMatrixHandle = GLES31.glGetUniformLocation(mProgram, "uScaleMatrix");
         // Apply the projection and view transformation
-        GLES20.glUniformMatrix4fv(mViewMatrixHandle, 1, false, viewMatrix, 0);
-        GLES20.glUniform4fv(mTranslationVectorHandle, 1 , mTranslationVector,0);
-        GLES20.glUniformMatrix4fv(mProjectionMatrixHandle, 1 ,false, projectionMatrix,0);
-        GLES20.glUniformMatrix4fv(mRotationMatrixHandle, 1, false, mCameraRotation , 0);
-        GLES20.glUniformMatrix4fv(mScaleMatrixHandle, 1, true, mScaleRotation, 0);
-        GLES20.glUniformMatrix4fv(mAdjustMatrixHandle,1, true, mAdjustRotation,0);
+        GLES31.glUniformMatrix4fv(mViewMatrixHandle, 1, false, viewMatrix, 0);
+        GLES31.glUniform4fv(mTranslationVectorHandle, 1 , mTranslationVector,0);
+        GLES31.glUniformMatrix4fv(mProjectionMatrixHandle, 1 ,false, projectionMatrix,0);
+        GLES31.glUniformMatrix4fv(mRotationMatrixHandle, 1, false, mCameraRotation , 0);
+        GLES31.glUniformMatrix4fv(mScaleMatrixHandle, 1, true, mScaleRotation, 0);
+        GLES31.glUniformMatrix4fv(mAdjustMatrixHandle,1, true, mAdjustRotation,0);
 
         // Draw the triangle
-        GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, vertexCount);
+        GLES31.glDrawArrays(GLES31.GL_TRIANGLES, 0, vertexCount);
 
         // Disable vertex array
-        GLES20.glDisableVertexAttribArray(mPositionHandle);
+        GLES31.glDisableVertexAttribArray(mPositionHandle);
     }
 
 

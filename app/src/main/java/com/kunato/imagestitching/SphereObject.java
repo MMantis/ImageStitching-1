@@ -18,7 +18,7 @@ package com.kunato.imagestitching;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.opengl.GLES20;
+import android.opengl.GLES31;
 import android.opengl.GLUtils;
 import android.util.Log;
 
@@ -126,35 +126,35 @@ public class SphereObject {
 
     public void createFBO(){
         //generate fbo id
-        GLES20.glGenFramebuffers(1, mFBO, 0);
+        GLES31.glGenFramebuffers(1, mFBO, 0);
         mFBOID = mFBO[0];
         //generate texture
-        GLES20.glGenTextures(1, mFBO, 0);
+        GLES31.glGenTextures(1, mFBO, 0);
         mFBOTex = mFBO[0];
         //generate render buffer
-        GLES20.glGenRenderbuffers(1, mFBO, 0);
+        GLES31.glGenRenderbuffers(1, mFBO, 0);
         int renderBufferId = mFBO[0];
         //Bind Frame buffer
-        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, mFBOID);
+        GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, mFBOID);
         //Bind texture
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mFBOTex);
+        GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, mFBOTex);
         //Define texture parameters
-        GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA, mWidth, mHeight, 0, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, null);
-        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE);
-        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE);
-        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
-        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
+        GLES31.glTexImage2D(GLES31.GL_TEXTURE_2D, 0, GLES31.GL_RGBA, mWidth, mHeight, 0, GLES31.GL_RGBA, GLES31.GL_UNSIGNED_BYTE, null);
+        GLES31.glTexParameteri(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_WRAP_S, GLES31.GL_CLAMP_TO_EDGE);
+        GLES31.glTexParameteri(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_WRAP_T, GLES31.GL_CLAMP_TO_EDGE);
+        GLES31.glTexParameteri(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_MAG_FILTER, GLES31.GL_LINEAR);
+        GLES31.glTexParameteri(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_MIN_FILTER, GLES31.GL_LINEAR);
         //Bind render buffer and define buffer dimension
-        GLES20.glBindRenderbuffer(GLES20.GL_RENDERBUFFER, renderBufferId);
-        GLES20.glRenderbufferStorage(GLES20.GL_RENDERBUFFER, GLES20.GL_DEPTH_COMPONENT16, mWidth, mHeight);
+        GLES31.glBindRenderbuffer(GLES31.GL_RENDERBUFFER, renderBufferId);
+        GLES31.glRenderbufferStorage(GLES31.GL_RENDERBUFFER, GLES31.GL_DEPTH_COMPONENT16, mWidth, mHeight);
         //Attach texture FBO color attachment
-        GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER, GLES20.GL_COLOR_ATTACHMENT0, GLES20.GL_TEXTURE_2D, mFBOTex, 0);
+        GLES31.glFramebufferTexture2D(GLES31.GL_FRAMEBUFFER, GLES31.GL_COLOR_ATTACHMENT0, GLES31.GL_TEXTURE_2D, mFBOTex, 0);
         //Attach render buffer to depth attachment
-        GLES20.glFramebufferRenderbuffer(GLES20.GL_FRAMEBUFFER, GLES20.GL_DEPTH_ATTACHMENT, GLES20.GL_RENDERBUFFER, renderBufferId);
+        GLES31.glFramebufferRenderbuffer(GLES31.GL_FRAMEBUFFER, GLES31.GL_DEPTH_ATTACHMENT, GLES31.GL_RENDERBUFFER, renderBufferId);
         //we are done, reset
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
-        GLES20.glBindRenderbuffer(GLES20.GL_RENDERBUFFER, 0);
-        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
+        GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, 0);
+        GLES31.glBindRenderbuffer(GLES31.GL_RENDERBUFFER, 0);
+        GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, 0);
     }
 
     public void loadGLTexture(final Context context, final int texture, boolean show) {
@@ -162,13 +162,13 @@ public class SphereObject {
         options.inSampleSize = 4;
         final Bitmap bitmap = BitmapFactory.decodeResource(context.getResources(), texture, options);
 
-        GLES20.glGenTextures(1, this.mTextures, 0);
-        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, this.mTextures[0]);
-        GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_NEAREST_MIPMAP_NEAREST);
-        GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_NEAREST);
-        GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S,GLES20.GL_CLAMP_TO_EDGE);
-        GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T,GLES20.GL_CLAMP_TO_EDGE);
+        GLES31.glGenTextures(1, this.mTextures, 0);
+        GLES31.glActiveTexture(GLES31.GL_TEXTURE0);
+        GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, this.mTextures[0]);
+        GLES31.glTexParameterf(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_MIN_FILTER, GLES31.GL_NEAREST_MIPMAP_NEAREST);
+        GLES31.glTexParameterf(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_MAG_FILTER, GLES31.GL_NEAREST);
+        GLES31.glTexParameterf(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_WRAP_S,GLES31.GL_CLAMP_TO_EDGE);
+        GLES31.glTexParameterf(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_WRAP_T,GLES31.GL_CLAMP_TO_EDGE);
         if(show)
         mockTexImage2D(bitmap);
     }
@@ -178,12 +178,12 @@ public class SphereObject {
         mArea[0] = mArea[1] = 0;
         mArea[2] = 9242;
         mArea[3] = 4620;
-        GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0);
+        GLUtils.texImage2D(GLES31.GL_TEXTURE_2D, 0, bitmap, 0);
 //        mArea[0] = 3257f;
 //        mArea[1] = 1460f;
 //        mArea[2] = 1881.0f;
 //        mArea[3] = 1707.0f;
-        GLES20.glGenerateMipmap(GLES20.GL_TEXTURE_2D);
+        GLES31.glGenerateMipmap(GLES31.GL_TEXTURE_2D);
         bitmap.recycle();
     }
 
@@ -199,58 +199,58 @@ public class SphereObject {
 
 
 
-        int xh = GLES20.glGetUniformLocation(mProgram,"img_x");
-        int yh = GLES20.glGetUniformLocation(mProgram,"img_y");
-        int widthh = GLES20.glGetUniformLocation(mProgram,"img_width");
-        int heighth = GLES20.glGetUniformLocation(mProgram,"img_height");
-        int alphah = GLES20.glGetUniformLocation(mProgram,"alpha");
+        int xh = GLES31.glGetUniformLocation(mProgram,"img_x");
+        int yh = GLES31.glGetUniformLocation(mProgram,"img_y");
+        int widthh = GLES31.glGetUniformLocation(mProgram,"img_width");
+        int heighth = GLES31.glGetUniformLocation(mProgram,"img_height");
+        int alphah = GLES31.glGetUniformLocation(mProgram,"alpha");
 
-        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, this.mTextures[0]);
+        GLES31.glActiveTexture(GLES31.GL_TEXTURE0);
+        GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, this.mTextures[0]);
         if(mTexRequireUpdate){
             Log.i("GLSphere", "Bitmap updated,Return to normal activity.");
-            GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, mQueueBitmap, 0);
-            GLES20.glGenerateMipmap(GLES20.GL_TEXTURE_2D);
+            GLUtils.texImage2D(GLES31.GL_TEXTURE_2D, 0, mQueueBitmap, 0);
+            GLES31.glGenerateMipmap(GLES31.GL_TEXTURE_2D);
             mQueueBitmap.recycle();
             mTexRequireUpdate = false;
         }
-        GLES20.glUseProgram(mProgram);
+        GLES31.glUseProgram(mProgram);
         if(!mRealRender){
 
-            GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, mFBOID);
-            GLES20.glViewport(0, 0, mWidth, mHeight);
-            GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
-            GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT);
+            GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, mFBOID);
+            GLES31.glViewport(0, 0, mWidth, mHeight);
+            GLES31.glClear(GLES31.GL_COLOR_BUFFER_BIT);
+            GLES31.glClear(GLES31.GL_DEPTH_BUFFER_BIT);
         }
 
         //Attrib
-        mPositionHandle = GLES20.glGetAttribLocation(mProgram, "vPosition");
-        mTextureCoordinateHandle = GLES20.glGetAttribLocation(mProgram, "a_TexCoordinate");
+        mPositionHandle = GLES31.glGetAttribLocation(mProgram, "vPosition");
+        mTextureCoordinateHandle = GLES31.glGetAttribLocation(mProgram, "a_TexCoordinate");
         mSphereBuffer.position(0);
-        GLES20.glEnableVertexAttribArray(mPositionHandle);
-        GLES20.glVertexAttribPointer(mPositionHandle, 3, GLES20.GL_FLOAT, false, mSphereShape.getVeticesStride(), mSphereBuffer);
+        GLES31.glEnableVertexAttribArray(mPositionHandle);
+        GLES31.glVertexAttribPointer(mPositionHandle, 3, GLES31.GL_FLOAT, false, mSphereShape.getVeticesStride(), mSphereBuffer);
 
         mSphereBuffer.position(3);
-        GLES20.glEnableVertexAttribArray(mTextureCoordinateHandle);
-        GLES20.glVertexAttribPointer(mTextureCoordinateHandle, 2, GLES20.GL_FLOAT, false, mSphereShape.getVeticesStride(), mSphereBuffer);
+        GLES31.glEnableVertexAttribArray(mTextureCoordinateHandle);
+        GLES31.glVertexAttribPointer(mTextureCoordinateHandle, 2, GLES31.GL_FLOAT, false, mSphereShape.getVeticesStride(), mSphereBuffer);
         //Uniform
-        mTextureHandle = GLES20.glGetUniformLocation(mProgram, "sTexture");
-        GLES20.glUniform1i(mTextureHandle, 0);
+        mTextureHandle = GLES31.glGetUniformLocation(mProgram, "sTexture");
+        GLES31.glUniform1i(mTextureHandle, 0);
         //Area
-        GLES20.glUniform1f(xh,mArea[0]);
-        GLES20.glUniform1f(yh,mArea[1]);
-        GLES20.glUniform1f(widthh,mArea[2]);
-        GLES20.glUniform1f(heighth,mArea[3]);
+        GLES31.glUniform1f(xh,mArea[0]);
+        GLES31.glUniform1f(yh,mArea[1]);
+        GLES31.glUniform1f(widthh,mArea[2]);
+        GLES31.glUniform1f(heighth,mArea[3]);
 //        int alpha_fixed = readPixel ? 1 : 0;
         int alpha_fixed = 0;
-        GLES20.glUniform1f(alphah,alpha);
-        mViewMatrixHandle = GLES20.glGetUniformLocation(mProgram, "uViewMatrix");
-        mProjectionMatrixHandle = GLES20.glGetUniformLocation(mProgram,"uProjectionMatrix");
-        GLES20.glUniformMatrix4fv(mViewMatrixHandle, 1, false, viewMatrix, 0);
-        GLES20.glUniformMatrix4fv(mProjectionMatrixHandle, 1, false, projectionMatrix, 0);
-        GLES20.glDrawElements(GLES20.GL_TRIANGLES, mSphereShape.getNumIndices()[0], GLES20.GL_UNSIGNED_SHORT, mIndexBuffer);
-        GLES20.glDisableVertexAttribArray(mPositionHandle);
-        GLES20.glDisableVertexAttribArray(mTextureCoordinateHandle);
+        GLES31.glUniform1f(alphah,alpha);
+        mViewMatrixHandle = GLES31.glGetUniformLocation(mProgram, "uViewMatrix");
+        mProjectionMatrixHandle = GLES31.glGetUniformLocation(mProgram,"uProjectionMatrix");
+        GLES31.glUniformMatrix4fv(mViewMatrixHandle, 1, false, viewMatrix, 0);
+        GLES31.glUniformMatrix4fv(mProjectionMatrixHandle, 1, false, projectionMatrix, 0);
+        GLES31.glDrawElements(GLES31.GL_TRIANGLES, mSphereShape.getNumIndices()[0], GLES31.GL_UNSIGNED_SHORT, mIndexBuffer);
+        GLES31.glDisableVertexAttribArray(mPositionHandle);
+        GLES31.glDisableVertexAttribArray(mTextureCoordinateHandle);
         if(!mRealRender){
             mScreenBuffer = ByteBuffer.allocateDirect(mWidth * 4);
             mScreenTopSeamBuffer = ByteBuffer.allocate(mWidth * 4);
@@ -261,11 +261,11 @@ public class SphereObject {
             mScreenLeftSeamBuffer.order(ByteOrder.nativeOrder());
             mScreenRightSeamBuffer = ByteBuffer.allocate(mHeight * 4);
             mScreenRightSeamBuffer.order(ByteOrder.nativeOrder());
-            GLES20.glReadPixels(0, 0, mWidth, 1, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, mScreenBotSeamBuffer);
-            GLES20.glReadPixels(0, mHeight-1, mWidth, 1, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, mScreenTopSeamBuffer);
+            GLES31.glReadPixels(0, 0, mWidth, 1, GLES31.GL_RGBA, GLES31.GL_UNSIGNED_BYTE, mScreenBotSeamBuffer);
+            GLES31.glReadPixels(0, mHeight-1, mWidth, 1, GLES31.GL_RGBA, GLES31.GL_UNSIGNED_BYTE, mScreenTopSeamBuffer);
 
-            GLES20.glReadPixels(0, 0, 1, mHeight, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, mScreenLeftSeamBuffer);
-            GLES20.glReadPixels(mWidth-1, 0, 1, mHeight, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, mScreenRightSeamBuffer);
+            GLES31.glReadPixels(0, 0, 1, mHeight, GLES31.GL_RGBA, GLES31.GL_UNSIGNED_BYTE, mScreenLeftSeamBuffer);
+            GLES31.glReadPixels(mWidth-1, 0, 1, mHeight, GLES31.GL_RGBA, GLES31.GL_UNSIGNED_BYTE, mScreenRightSeamBuffer);
             mScreenTopSeamBuffer.rewind();
             mScreenRightSeamBuffer.rewind();
             mScreenLeftSeamBuffer.rewind();
@@ -292,7 +292,7 @@ public class SphereObject {
                 glRenderer.mUsingOldMatrix = false;
                 //Log.d("GLRenderer","mFade :"+glRenderer.mFadeAlpha);
             }
-            GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
+            GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, 0);
         }
 
         if(readPixel) {
@@ -301,8 +301,7 @@ public class SphereObject {
             Log.d("GL","ReadPixel");
             mScreenBuffer = ByteBuffer.allocateDirect(mHeight * mWidth * 4);
             mScreenBuffer.order(ByteOrder.nativeOrder());
-            GLES20.glReadPixels(0, 0, mWidth, mHeight, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, mScreenBuffer);
-            Log.d("mScreenBuffer", "Remaining " + mScreenBuffer.remaining());
+            GLES31.glReadPixels(0, 0, mWidth, mHeight, GLES31.GL_RGBA, GLES31.GL_UNSIGNED_BYTE, mScreenBuffer);
             mScreenBuffer.rewind();
             byte pixelsBuffer[] = new byte[4*mHeight*mWidth];
             mScreenBuffer.get(pixelsBuffer);

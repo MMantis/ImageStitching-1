@@ -8,7 +8,7 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorManager;
 import android.hardware.camera2.CameraCharacteristics;
 import android.media.Image;
-import android.opengl.GLES20;
+import android.opengl.GLES31;
 import android.opengl.GLUtils;
 import android.util.Log;
 import android.util.Size;
@@ -313,33 +313,33 @@ public class Util {
     }
 
     public static int loadShader ( String vss, String fss ) {
-        int vshader = GLES20.glCreateShader(GLES20.GL_VERTEX_SHADER);
-        GLES20.glShaderSource(vshader, vss);
-        GLES20.glCompileShader(vshader);
+        int vshader = GLES31.glCreateShader(GLES31.GL_VERTEX_SHADER);
+        GLES31.glShaderSource(vshader, vss);
+        GLES31.glCompileShader(vshader);
         int[] compiled = new int[1];
-        GLES20.glGetShaderiv(vshader, GLES20.GL_COMPILE_STATUS, compiled, 0);
+        GLES31.glGetShaderiv(vshader, GLES31.GL_COMPILE_STATUS, compiled, 0);
         if (compiled[0] == 0) {
             Log.e("Shader", "Could not compile vshader");
-            Log.v("Shader", "Could not compile vshader:"+GLES20.glGetShaderInfoLog(vshader));
-            GLES20.glDeleteShader(vshader);
+            Log.v("Shader", "Could not compile vshader:"+GLES31.glGetShaderInfoLog(vshader));
+            GLES31.glDeleteShader(vshader);
             vshader = 0;
         }
 
-        int fshader = GLES20.glCreateShader(GLES20.GL_FRAGMENT_SHADER);
-        GLES20.glShaderSource(fshader, fss);
-        GLES20.glCompileShader(fshader);
-        GLES20.glGetShaderiv(fshader, GLES20.GL_COMPILE_STATUS, compiled, 0);
+        int fshader = GLES31.glCreateShader(GLES31.GL_FRAGMENT_SHADER);
+        GLES31.glShaderSource(fshader, fss);
+        GLES31.glCompileShader(fshader);
+        GLES31.glGetShaderiv(fshader, GLES31.GL_COMPILE_STATUS, compiled, 0);
         if (compiled[0] == 0) {
             Log.e("Shader", "Could not compile fshader");
-            Log.v("Shader", "Could not compile fshader:"+GLES20.glGetShaderInfoLog(fshader));
-            GLES20.glDeleteShader(fshader);
+            Log.v("Shader", "Could not compile fshader:"+GLES31.glGetShaderInfoLog(fshader));
+            GLES31.glDeleteShader(fshader);
             fshader = 0;
         }
 
-        int program = GLES20.glCreateProgram();
-        GLES20.glAttachShader(program, vshader);
-        GLES20.glAttachShader(program, fshader);
-        GLES20.glLinkProgram(program);
+        int program = GLES31.glCreateProgram();
+        GLES31.glAttachShader(program, vshader);
+        GLES31.glAttachShader(program, fshader);
+        GLES31.glLinkProgram(program);
 
         return program;
     }
