@@ -38,6 +38,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import javax.microedition.khronos.opengles.GL;
+
 public class StitchObject {
 
     private final String vertexShaderCode =
@@ -52,31 +54,70 @@ public class StitchObject {
 
     private final String fragmentShaderCode = "" +
             "#version 310 es\n" +
+            "#define M_PI 3.1415926535897932384626433832795\n" +
+            "#define SCALE 1468.803406\n"+
             "precision highp float;\n" +
-            "uniform int length;" +
+            "uniform int length;\n" +
             "uniform sampler2D sTexture[7];\n" +
             "uniform ivec2 size[7];\n" +
             "uniform ivec2 corner[7];\n" +
+            "uniform mat3 r_kinv[7];\n" +
+            "uniform mat3 k_rinv[7];\n" +
+            "uniform ivec2 tl;\n" +
+            "uniform ivec2 winSize;\n" +
             "in vec2 texCoord;\n" +
             "out vec4 fragmentColor;\n" +
             "int idx = 0;\n" +
+            "vec2 mapForward(in mat3 matrix, in vec3 uv, in float scale){\n" +
+            "   vec3 temp = matrix * uv;\n" +
+            "   float u = scale * atan(temp.y,temp.x);\n" +
+            "   float v = scale * (M_PI - acos(temp.x / sqrt(temp.y * temp.y + temp.x * temp.x + temp.z * temp.z)));\n" +
+            "   return vec2(u,v);\n" +
+            "}\n" +
+            "vec3 mapBackward(in vec3 uv, in float scale, in mat3 matrix){\n" +
+            "   uv/=scale;\n" +
+            "   float sinv = sin(M_PI - uv.y);\n" +
+            "   vec3 temp = vec3(sinv * sin(uv.x),cos(M_PI - uv.y),sinv * cos(uv.x) );\n" +
+            "   vec3 ret = matrix * temp;\n" +
+            "   if(ret.z < 0.0){\n" +
+            "       ret.x = -1.0;ret.y = -1.0;" +
+            "   }else{\n" +
+            "       ret.x/=ret.z;ret.y/=ret.z;\n" +
+            "   }\n" +
+            "   return ret;\n" +
+            "}\n" +
             "vec4 getSampleFromArray(in int ndx){\n" +
             "   vec4 color;\n" +
             "" +
             "   if(ndx == 0){\n" +
-            "   ivec2 pos = ivec2(gl_FragCoord.x,gl_FragCoord.y);\n" +
-            "       ivec2 diff = pos - corner[0];" +
-            "       color = texelFetch(sTexture[0], ivec2(diff.x,size[0].y - diff.y) ,0);\n" +
+            "   ivec2 pos = ivec2(gl_FragCoord.x,winSize.y - int(gl_FragCoord.y));\n" +
+            "       ivec2 diff = pos + tl;\n" +
+            "       vec3 map = mapBackward(vec3(diff.x,diff.y,1),SCALE,k_rinv[0]);\n" +
+            "       color = texelFetch(sTexture[0], ivec2(map.x,int(map.y)) ,0);\n" +
+            "       if(int(map.x) < 0 && int(map.x) >= size[0].x && int(map.y) < 0 && int(map.y) >= size[0].y ){" +
+            "           color.a = 0.0;" +
+            "       }" +
+//            "color = vec4(0,1,1,1);" +
             "   }\n" +
             "   else if(ndx == 1){\n" +
-            "   ivec2 pos = ivec2(gl_FragCoord.x,gl_FragCoord.y);\n" +
-            "       ivec2 diff = pos - corner[1];\n" +
-            "       color = texelFetch(sTexture[1], ivec2(diff.x,size[1].y - diff.y) ,0);\n" +
+            "   ivec2 pos = ivec2(gl_FragCoord.x,winSize.y - int(gl_FragCoord.y));\n" +
+            "       ivec2 diff = pos + tl;\n" +
+            "       vec3 map = mapBackward(vec3(diff.x,diff.y,1),SCALE,k_rinv[1]);" +
+            "       color = texelFetch(sTexture[1], ivec2(map.x,int(map.y)) ,0);\n" +
+            "       if(int(map.x) < 0 && int(map.x) >= size[1].x && int(map.y) < 0 && int(map.y) >= size[1].y ){" +
+            "           color.a = 0.0;" +
+            "       }" +
+//            "color = vec4(1,1,0,1);" +
             "   }\n" +
             "   else if(ndx == 2){\n" +
-            "   ivec2 pos = ivec2(gl_FragCoord.x,gl_FragCoord.y);\n" +
-            "       ivec2 diff = pos - corner[2];\n" +
-            "       color = texelFetch(sTexture[2], ivec2(diff.x,size[2].y - diff.y) ,0);\n" +
+            "   ivec2 pos = ivec2(gl_FragCoord.x,winSize.y - int(gl_FragCoord.y));\n" +
+            "       ivec2 diff = pos + tl;\n" +
+            "       vec3 map = mapBackward(vec3(diff.x,diff.y,1),SCALE,k_rinv[2]);" +
+            "       color = texelFetch(sTexture[2], ivec2(map.x,int(map.y)) ,0);\n" +
+            "       if(int(map.x) < 0 && int(map.x) >= size[2].x && int(map.y) < 0 && int(map.y) >= size[2].y ){" +
+            "           color.a = 0.0;" +
+            "       }" +
+//            "color = vec4(1,0,1,1);" +
             "   }\n" +
             "   else if(ndx == 3){\n" +
             "   ivec2 pos = ivec2(gl_FragCoord.x,gl_FragCoord.y);\n" +
@@ -101,19 +142,25 @@ public class StitchObject {
             "   return color;\n"+
             "}\n" +
             "void main() {\n" +
-            "   int idx = 0;" +
-            "   ivec2 pos = ivec2(gl_FragCoord.x,gl_FragCoord.y);" +
-            "   for(int i = 0 ; i < length ;i++){" +
-            "       if(corner[i].x < pos.x && corner[i].x + size[i].x > pos.x && corner[i].y < pos.y && corner[i].y + size[i].y > pos.y){" +
+            "   int idx;" +
+            "   ivec2 pos = ivec2(gl_FragCoord.x,winSize.y - int(gl_FragCoord.y));" +
+            "   for(int i = length-1 ; i >= 0 ;i--){" +
+            "       if(corner[i].x < pos.x + tl.x && corner[i].x + size[i].x > pos.x + tl.x && corner[i].y < pos.y + tl.y && corner[i].y + size[i].y > pos.y + tl.y){" +
             "           idx = i;\n" +
+            "           vec4 color = getSampleFromArray(idx);\n" +
+            "           if(color.a != 0.0){" +
+            "               fragmentColor = color;" +
+            "               break;" +
+            "           }" +
             "       }" +
             "   }" +
-            "   fragmentColor = getSampleFromArray(idx);\n" +
+            "   \n" +
             "   \n" +
             "}";
     private final FloatBuffer pVertex;
     private final FloatBuffer pTexCoord;
-
+    private int mTLX;
+    private int mTLY;
     public boolean mRealRender = false;
     private final int mProgram;
     public final int NUMBER_OF_TEXTURE = 3;
@@ -199,12 +246,11 @@ public class StitchObject {
         options.inSampleSize = 1;
         GLES31.glGenTextures(2, this.mTextures, 0);
 
-        List<float[]> sizeLists = new ArrayList<>(mTextures.length);
         for(int i = 0 ; i < mTextures.length ;i++){
             Bitmap bitmap = null;
             if(i == 0){
                 try {
-                    InputStream is = context.getAssets().open("warped0.jpg");
+                    InputStream is = context.getAssets().open("img0.jpg");
                     bitmap = BitmapFactory.decodeStream(is);
 
                 } catch (IOException e) {
@@ -214,7 +260,7 @@ public class StitchObject {
             else if(i == 1){
 
                 try {
-                    InputStream is = context.getAssets().open("warped1.jpg");
+                    InputStream is = context.getAssets().open("img1.jpg");
                     bitmap = BitmapFactory.decodeStream(is);
                 } catch (IOException e) {
                     Log.d("Stitch GPU","Loadfile Error");
@@ -222,7 +268,7 @@ public class StitchObject {
             }
             else if(i == 2){
                 try {
-                    InputStream is = context.getAssets().open("warped2.jpg");
+                    InputStream is = context.getAssets().open("img2.jpg");
                     bitmap = BitmapFactory.decodeStream(is);
                 } catch (IOException e) {
                     Log.d("Stitch GPU","Loadfile Error");
@@ -238,14 +284,13 @@ public class StitchObject {
 
             GLES31.glGetTexLevelParameterfv(GLES31.GL_TEXTURE_2D,0,GLES31.GL_TEXTURE_WIDTH,size,0);
             GLES31.glGetTexLevelParameterfv(GLES31.GL_TEXTURE_2D,0,GLES31.GL_TEXTURE_HEIGHT,size,1);
-            sizeLists.add(size);
             Log.d("Stitch GPU","Loaded Texture Size :"+ Arrays.toString(size));
         }
-        int[] cof = new int[]{0,0,452,-19,919,-18};
+        int[] cof = new int[]{-532,1437,-110,1408,360,1467};
+        int[] sof = new int[]{1034,1701,1058,1701,1047,1700};
         float min_x = 10000;
         float min_y = 10000;
         for(int i = 0 ; i < cof.length ;i++){
-            Log.d("TEST","a"+i%2);
             if(cof[i] < min_x && i%2 == 0){
                 min_x = cof[i];
             }
@@ -254,14 +299,19 @@ public class StitchObject {
 
             }
         }
-        for(int i = 0; i< cof.length ;i++){
-            if(i%2 == 0){
-                cof[i] -= min_x;
-            }
-            if(i%2 == 1){
-                cof[i] -= min_y;
-            }
-        }
+
+        mTLX = (int) min_x;
+        mTLY = (int) min_y;
+
+//
+//        for(int i = 0; i< cof.length ;i++){
+//            if(i%2 == 0){
+//                cof[i] -= min_x;
+//            }
+//            if(i%2 == 1){
+//                cof[i] -= min_y;
+//            }
+//        }
         min_x = 10000;
         min_y = 10000;
         float max_x = -10000;
@@ -280,30 +330,27 @@ public class StitchObject {
             }
             if(cof[i] > max_x && i%2 == 0){
                 max_x = cof[i];
-                max_x_index = i/2;
+                max_x_index = i;
             }
             if(cof[i] > max_y && i%2 == 1){
                 max_y = cof[i];
-                max_y_index = i/2;
+                max_y_index = i;
             }
         }
         corners = cof;
+        mWidth = (int) (max_x-min_x+sof[max_x_index]);
 
-        mWidth = (int) (max_x-min_x+sizeLists.get(max_x_index)[0]);
-
-        mHeight = (int) (max_y-min_y+sizeLists.get(max_y_index)[1]);
+        mHeight = (int) (max_y-min_y+sof[max_y_index]);
 //        mWidth = 1495;
 //        mHeight = 1719;
-        Log.d("Stitch GPU","Size ("+mWidth+","+mHeight+")");
-        for(int i = 0 ; i< sizeLists.size() ;i++){
-            sizes[i*2] = (int) sizeLists.get(i)[0];
-            sizes[i*2+1] = (int) sizeLists.get(i)[1];
-        }
+        Log.d("Stitch GPU","Size ("+mWidth+","+mHeight+") , TL ("+mTLX+","+mTLY+")");
+        sizes = sof;
     }
 
 
 
     public void draw() {
+        long start = System.currentTimeMillis();
         GLES31.glUseProgram(mProgram);
         GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, mFBOID);
         GLES31.glViewport(0, 0, mWidth, mHeight);
@@ -315,7 +362,10 @@ public class StitchObject {
         int sh = GLES31.glGetUniformLocation(mProgram,"size");
         int ch = GLES31.glGetUniformLocation(mProgram,"corner");
         int lh = GLES31.glGetUniformLocation(mProgram,"length");
-
+        int r_kinvh = GLES31.glGetUniformLocation(mProgram,"r_kinv");
+        int k_rinvh = GLES31.glGetUniformLocation(mProgram,"k_rinv");
+        int tlh = GLES31.glGetUniformLocation(mProgram,"tl");
+        int wsh = GLES31.glGetUniformLocation(mProgram,"winSize");
         GLES31.glVertexAttribPointer(ph, 2, GLES31.GL_FLOAT, false, 4*2, pVertex);
         GLES31.glVertexAttribPointer(tch, 2, GLES31.GL_FLOAT, false, 4*2, pTexCoord );
         GLES31.glEnableVertexAttribArray(ph);
@@ -328,11 +378,25 @@ public class StitchObject {
             texArray[i] = i;
         }
         GLES31.glUniform1i(lh,mTextures.length);
+
+        Log.d("Stitch GPU","COF : "+Arrays.toString(corners));
+        Log.d("Stitch GPU","SizeList : "+Arrays.toString(sizes));
         GLES31.glUniform2iv(sh,mTextures.length,sizes,0);
         GLES31.glUniform2iv(ch,mTextures.length,corners,0);
         GLES31.glUniform1iv(th,mTextures.length,texArray,0);
+        GLES31.glUniform2i(tlh,mTLX,mTLY);
+        GLES31.glUniform2i(wsh,mWidth,mHeight);
+        float[] r_kinvData = new float[]{1,0,0,0,1,0,0,0,1,1,0,0,0,1,0,0,0,1,1,0,0,0,1,0,0,0,1,1,0,0,0,1,0,0,0,1,1,0,0,0,1,0,0,0,1,1,0,0,0,1,0,0,0,1,1,0,0,0,1,0,0,0,1,};
+        float[] k_rinvData = new float[]{ 1.46880334e+03f, 0.f, 5.56620422e+02f, 0.f, 1.46880334e+03f,  9.87914978e+02f, 0.f, 0.f, 1.f,
+                1.56739111e+03f, -3.09704323e+01f, 9.76510925e+01f, 3.19323425e+02f, 1.44898230e+03f, 9.65319824e+02f, 2.95225173e-01f, -1.96384918e-02f, 9.55225825e-01f ,
+                1.52318079e+03f, 3.44877005e+00f, -3.83559906e+02f, 5.54351318e+02f, 1.48857654e+03f, 7.81149048e+02f, 5.71894169e-01f, 2.03441400e-02f, 8.20075095e-01f ,
+                 };
+        GLES31.glUniformMatrix3fv(r_kinvh,mTextures.length,false,r_kinvData,0);
+        GLES31.glUniformMatrix3fv(k_rinvh,mTextures.length,true,k_rinvData,0);
         GLES31.glDrawArrays(GLES31.GL_TRIANGLE_STRIP, 0, 4);
 
+        long end = System.currentTimeMillis();
+        Log.d("Stitching GPU","TimeSpend : "+(end-start)*0.001);
         //END OF RENDERING
         mScreenBuffer = ByteBuffer.allocateDirect(mHeight * mWidth * 4);
         mScreenBuffer.order(ByteOrder.nativeOrder());

@@ -31,6 +31,7 @@ public class GLRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
     public static final float ZOOM_RATIO = 1.7f;
     private final float CANVAS_SIZE = 1f * ZOOM_RATIO;
     private final float HEIGHT_WIDTH_RATIO = 1f;
+    private boolean mFirstFrame = true;
     private List<ARObject> mARObject = new ArrayList<>();
     public float[] mRotationMatrix = {1f,0,0,0
             ,0,1f,0,0
@@ -137,7 +138,10 @@ public class GLRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
 //        GLU.gluProject(123.4349f, 0, -169.89357f, mRotationMatrix, 0, mProjectionMatrix, 0, viewport,0,out,0);
 //        Log.d("gluProject", "" + Arrays.toString(out));
         //draws
-        mStitch.draw();
+        if(mFirstFrame){
+            mStitch.draw();
+            mFirstFrame = false;
+        }
         synchronized(this) {
             if ( mUpdateST ) {
                 //choose whice texture to update

@@ -450,6 +450,7 @@ void doComposition(float warped_image_scale,vector<CameraParams> cameras,vector<
 //  Ptr<WarperCreator> warper_creator = new cv::CylindricalWarper();
 	Ptr<WarperCreator> warper_creator = new cv::SphericalWarper();
 	Ptr<RotationWarper> warper = warper_creator->create(warped_image_scale * compose_work_aspect);
+	__android_log_print(ANDROID_LOG_DEBUG,"C++ Composition","Warp Scale : %f",warped_image_scale*compose_work_aspect);
 	for (int i = 0; i < p_img.size(); ++i)
 	{
 
@@ -487,8 +488,10 @@ void doComposition(float warped_image_scale,vector<CameraParams> cameras,vector<
 				img = p_img[i].full_image;
 
 			Size img_size = img.size();
+			char img_file_name[50];
+			sprintf(img_file_name,"/sdcard/stitch/img%d.jpg",i);
+			imwrite(img_file_name,img);
 			Mat K;
-
 //			mask.create(img_size, CV_8U);
 //			mask.setTo(Scalar::all(255));
 
@@ -497,8 +500,22 @@ void doComposition(float warped_image_scale,vector<CameraParams> cameras,vector<
 			cameras[i].K().convertTo(K, CV_32F);
 			clock_t c_c1 = std::clock();
 			Mat xmap,ymap;
-			warper->buildMaps(img.size(),K,cameras[i].R,xmap,ymap);
-            clock_t c_c15 = std::clock();
+			char map_file_name[50];
+			sprintf(map_file_name,"/sdcard/stitch/map%d.yml",i);
+			cv::FileStorage mapfs(map_file_name, cv::FileStorage::WRITE);
+			Rect r = warper->buildMaps(img.size(),K,cameras[i].R,xmap,ymap);
+			SphericalProjector projector;
+			projector.scale = warped_image_scale*compose_work_aspect;
+			projector.setCameraParams(K,cameras[i].R);
+			
+			mapfs << "k_rinv" << Mat(3,3,CV_32F,projector.k_rinv);
+			mapfs << "r_kinv" << Mat(3,3,CV_32F,projector.r_kinv);
+
+//			mapfs << "xmap" << xmap;
+//			mapfs << "ymap" << ymap;
+
+            __android_log_print(ANDROID_LOG_DEBUG,"C++ Composition","Rect tl (%d,%d) br (%d,%d)",r.x,r.y,r.br().x,r.br().y);
+			clock_t c_c15 = std::clock();
             //for(int q = 0; q < img.size();q++){
             //    int x = xmap.at<float>(q);
             //    int y = ymap.at<float>(q);
@@ -555,11 +572,10 @@ void doComposition(float warped_image_scale,vector<CameraParams> cameras,vector<
 			//}
 			//else{
             //    dst.x = (np2(dst.x) - (np2(dst.x) >> 1));
-			//}
+			//}xw
 
 
 			//dst.y = np2(dst.y) - (np2(dst.y) >> 1);
-			__android_log_print(ANDROID_LOG_DEBUG,"Test","%d %d",dst.x,dst.y);
             //dst.width = np2(dst.width);
             //dst.height = np2(dst.height);
 			composer::prepare(dst);
@@ -837,9 +853,10 @@ JNIEXPORT jint JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativ
 	clock_t c_m7 = clock();
 	__android_log_print(ANDROID_LOG_INFO,"C++ Stitching,Timer","%lf [Match %lf,Optimize %lf,Warp %lf,Seam %lf,Stitch %lf]",((double)c_m7-c_m1)/CLOCKS_PER_SEC,
 						((double)c_m2-c_m1)/CLOCKS_PER_SEC,((double)c_m3-c_m2)/CLOCKS_PER_SEC,((double)c_m4-c_m3)/CLOCKS_PER_SEC,((double)c_m5-c_m4)/CLOCKS_PER_SEC,((double)c_m7-c_m6)/CLOCKS_PER_SEC);
-	cv::FileStorage fs("/sdcard/stitch/rotation.yml", cv::FileStorage::WRITE);
+	cv::FileStorage rfs("/sdcard/stitch/rotation.yml", cv::FileStorage::WRITE);
+	rfs << "k" << images[0].param.K();
     for(int i = 0 ; i < images.size() ; i++){
-        fs << "i" << images[i].param.R;
+        rfs << "i" << images[i].param.R;
     }
     for(int i = 0; i < 4 ; i++){
         for(int j = 0; j < 4 ;j++){
