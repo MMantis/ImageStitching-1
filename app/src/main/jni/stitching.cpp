@@ -44,6 +44,8 @@
 //M*/
 #pragma ide diagnostic ignored "ArrayIssue"
 #define EXPERIMENT 0
+#define DEBUG
+#define MINIMIZE
 #include "stitching.h"
 
 using namespace std;
@@ -65,19 +67,16 @@ void findDescriptor(Mat img,std::vector<KeyPoint> &keypoints ,Mat &descriptor){
     mask.setTo(Scalar::all(255));
     int x_margin = img.rows/3;
     int y_margin = img.cols/3;
-//    for(int i = x_margin ; i < img.rows - x_margin;i++){
-//        for(int j = y_margin ; j < img.cols - y_margin;j++){
-//            mask.at<uchar>(i,j) = 0;
-//        }
-//    }
     cvtColor(img,gray_img,CV_BGR2GRAY);
 	(*detector)(gray_img , mask, keypoints, descriptor, false);
 	descriptor = descriptor.reshape(1, static_cast<int>(keypoints.size()));
     Mat out;
+#ifdef DEBUG
     drawKeypoints(img,keypoints,out);
     char file_str[50]; // enough to hold all numbers up to 64-bits
     sprintf(file_str, "/sdcard/stitch/keypoint%d.jpg", images.size());
     imwrite(file_str,out);
+#endif
 }
 
 inline float calcDistance(float x1,float y1,float z1,float x2,float y2, float z2){
@@ -121,7 +120,6 @@ JNIEXPORT void JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativ
 	Mat& gl_rot = *(Mat*) glrotaddr;
 	ImageFeatures input_feature;
 	Mat input_descriptor;
-	//imwrite("/sdcard/stitch/tracking2.jpg",full_img);
 	clock_t c_before_desc = std::clock();
 	findDescriptor(img, input_feature.keypoints, input_feature.descriptors);
 	clock_t c_after_desc = std::clock();
@@ -137,7 +135,7 @@ JNIEXPORT void JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativ
 		}
 	}
 	int nearest_index = findNearest(0,images.size(),images,input_R);
-    //imwrite("/sdcard/stitch/tracking3.jpg",images[nearest_index].full_img);
+
 	tracking_feature[0] = images[nearest_index].feature;
 	tracking_feature[1] = input_feature;
 	clock_t c_before_matcher = std::clock();
@@ -324,6 +322,7 @@ void warpFeature(float warped_image_scale ,vector<CameraParams> cameras,vector<I
 	}
 
 }
+
 inline void vectorMatrixMultiply(float vec[],float matrix[], float *out ){
 	out[0] = matrix[0] * vec[0] + matrix[1] * vec[1] + matrix[2] * vec[2];
 	out[1] = matrix[3] * vec[0] + matrix[4] * vec[1] + matrix[5] * vec[2];
@@ -453,13 +452,7 @@ vector<int> findOverlap(vector<Point2i> p,vector<Size> size){
     }
     return out;
 }
-void threadTask(int msg){
-    double t = 0;
-    for(int i = 0 ; i < 10000000 ;i++){
-        t+=((rand()%100) * 0.1);
-    }
-    __android_log_print(ANDROID_LOG_INFO,"Thread","Hello %d %lf",msg,t);
-}
+
 
 vector<Rect> findROI(float warped_image_scale,std::vector<ImagePackage> p_img){
 	double compose_work_aspect = compose_scale / work_scale;
@@ -557,13 +550,14 @@ vector<Rect> findROI(float warped_image_scale,std::vector<ImagePackage> p_img){
 	__android_log_print(ANDROID_LOG_DEBUG,"C++ FindROI"," %lf %d",(double)(c_t1-c_t0)/CLOCKS_PER_SEC,count);
 	return rois;
 }
-//need to re-done in some part
+
 void doComposition(float warped_image_scale,vector<CameraParams> cameras,vector<ImagePackage> &p_img,Ptr<ExposureCompensator> compensator,float work_scale,float compose_scale,int blend_type,Mat &result,Mat &area){
+
+#ifdef DEBUG
 	cv::FileStorage pfs("/sdcard/stitch/position.yml", cv::FileStorage::WRITE);
+#endif
 
 	double compose_work_aspect = compose_scale / work_scale;
-
-
 	Mat img_warped;
 	Mat dilated_mask, seam_mask;
 	Mat mask, mask_warped;
@@ -610,18 +604,11 @@ void doComposition(float warped_image_scale,vector<CameraParams> cameras,vector<
 				img = p_img[i].full_image;
 
 			Size img_size = img.size();
-			char img_file_name[50];
-			sprintf(img_file_name,"/sdcard/stitch/img%d.jpg",i);
-			imwrite(img_file_name,img);
+			Mat xmap,ymap;
 			Mat K;
-//			mask.create(img_size, CV_8U);
-//			mask.setTo(Scalar::all(255));
-
-//			warper->warp(mask, K, cameras[i].R, INTER_NEAREST, BORDER_CONSTANT, mask_warped);
-//			p_img[i].compose_mask_warped = seam_mask & mask_warped;
 			cameras[i].K().convertTo(K, CV_32F);
 			clock_t c_c1 = std::clock();
-			Mat xmap,ymap;
+#ifdef DEBUG
 			char map_file_name[50];
 			sprintf(map_file_name,"/sdcard/stitch/map%d.yml",i);
 			cv::FileStorage mapfs(map_file_name, cv::FileStorage::WRITE);
@@ -629,26 +616,18 @@ void doComposition(float warped_image_scale,vector<CameraParams> cameras,vector<
 			SphericalProjector projector;
 			projector.scale = warped_image_scale*compose_work_aspect;
 			projector.setCameraParams(K,cameras[i].R);
-			__android_log_print(ANDROID_LOG_DEBUG,"C++ Composition","TimeSpend Rect %d %d %d %d",r.x,r.y,r.width,r.height);
+			__android_log_print(ANDROID_LOG_DEBUG,"C++ Composition","Rect %d %d %d %d",r.x,r.y,r.width,r.height);
 			mapfs << "k_rinv" << Mat(3,3,CV_32F,projector.k_rinv);
 			mapfs << "r_kinv" << Mat(3,3,CV_32F,projector.r_kinv);
-
-//			mapfs << "xmap" << xmap;
-//			mapfs << "ymap" << ymap;
+			char img_file_name[50];
+			sprintf(img_file_name,"/sdcard/stitch/img%d.jpg",i);
+			imwrite(img_file_name,img);
+#endif
 
             __android_log_print(ANDROID_LOG_DEBUG,"C++ Composition","Rect tl (%d,%d) br (%d,%d)",r.x,r.y,r.br().x,r.br().y);
 			clock_t c_c15 = std::clock();
-            //for(int q = 0; q < img.size();q++){
-            //    int x = xmap.at<float>(q);
-            //    int y = ymap.at<float>(q);
-            //    img_warped.at<float>(q) = img.at<float>(x,y);
-            //}
-            __android_log_print(ANDROID_LOG_DEBUG,"C++ Composition","Type : %d",xmap.type());
-            //Run 2 time ?
             remap(img,img_warped,xmap,ymap);
             __android_log_print(ANDROID_LOG_DEBUG,"C++ Composition","Step : %d",1);
-			//remap(img, img_warped, xmap, ymap, INTER_LINEAR, BORDER_REFLECT);
-			//warper->warp(img, K, cameras[i].R, INTER_LINEAR, BORDER_REFLECT, img_warped);
 			clock_t c_c2 = std::clock();
 			img_warped.convertTo(p_img[i].compose_image_warped, CV_8U);
 			img.release();
@@ -683,23 +662,10 @@ void doComposition(float warped_image_scale,vector<CameraParams> cameras,vector<
 			    __android_log_print(ANDROID_LOG_DEBUG,"C++","%d : (%d,%d) (%d,%d)",i,corners[i].x,corners[i].y,sizes[i].width,sizes[i].height);
             }
 			Rect dst = resultRoi(corners, sizes);
-			//Rect dst = full;
-			//dst.x = -(width/2) + ((np2((width/2)+dst.x) - (np2((width/2)+dst.x) >> 1)));
-            dst.x -= 10;
+			dst.x -= 10;
             dst.y -= 10;
             dst.width += 20;
             dst.height += 20;
-			//if(dst.x < 0){
-			//    dst.x = -np2(-dst.x);
-			//}
-			//else{
-            //    dst.x = (np2(dst.x) - (np2(dst.x) >> 1));
-			//}xw
-
-
-			//dst.y = np2(dst.y) - (np2(dst.y) >> 1);
-            //dst.width = np2(dst.width);
-            //dst.height = np2(dst.height);
 			composer::prepare(dst);
 			area.at<float>(0,0) = (width/2)+dst.x;
 			area.at<float>(0,1) = dst.y;
@@ -713,6 +679,7 @@ void doComposition(float warped_image_scale,vector<CameraParams> cameras,vector<
 		__android_log_print(ANDROID_LOG_DEBUG,"C++ Composition","Debug");
 		clock_t c_c6 = std::clock();
 		composer::feed(p_img[i].compose_image_warped, p_img[i].compose_mask_warped, p_img[i].compose_corner);
+#ifdef DEBUG
 		char warp_file_name[50];
 		char mask_file_name[50];
 		sprintf(mask_file_name,"/sdcard/stitch/mask%d.jpg",i);
@@ -722,6 +689,7 @@ void doComposition(float warped_image_scale,vector<CameraParams> cameras,vector<
 		pfs << "c" << p_img[i].compose_corner;
 		pfs << "s_x" << p_img[i].compose_image_warped.cols;
 		pfs << "s_y" << p_img[i].compose_image_warped.rows;
+#endif
 		clock_t c_c7 = std::clock();
 
         c_feed_total+=(double)(c_c7-c_c6);
@@ -753,21 +721,21 @@ JNIEXPORT void JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativ
 	image_package.full_size = image_package.full_image.size();
 	ImageFeatures feature;
 	Mat img;
+#ifdef DEBUG
 	char file_str[50]; // enough to hold all numbers up to 64-bits
-    sprintf(file_str, "/sdcard/stitch/input%d.jpg", images.size());
-//	imwrite(file_str,full_img);
+  	sprintf(file_str, "/sdcard/stitch/input%d.jpg", images.size());
+	imwrite(file_str,full_img);
+#endif
 	__android_log_print(ANDROID_LOG_INFO,"C++ AddImage","Recived Full Image Size: %d %d",full_img.size().width,full_img.size().height);
 	resize(full_img, img, Size(), work_scale, work_scale);
+#ifdef MINIMIZE
 	findDescriptor(img,feature.keypoints,feature.descriptors);
 	feature.img_idx = images.size();
 	feature.img_size = img.size();
 	resize(full_img, img, Size(), seam_scale, seam_scale);
+#endif
 
 
-//    __android_log_print(ANDROID_LOG_VERBOSE,"Feature","SURF Keypoints Size %d",feature.keypoints.size());
-//    __android_log_print(ANDROID_LOG_VERBOSE,"Feature","SURF Size (%d %d)",feature.descriptors.cols,feature.descriptors.rows);
-//    Ptr<FeaturesFinder> finder = new OrbFeaturesFinder();
-//    (*finder)(img, feature);
 	__android_log_print(ANDROID_LOG_INFO,"C++ AddImage","Feature Keypoints Size %d",feature.keypoints.size());
 	__android_log_print(ANDROID_LOG_INFO,"C++ AddImage","Feature Size (%d %d)",feature.descriptors.cols,feature.descriptors.rows);
 
@@ -780,15 +748,6 @@ JNIEXPORT void JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativ
     camera.ppy = camera_ppy * work_scale;
     camera.focal = camera_focal_x * work_scale;
     camera.aspect = camera_focal_y/camera_focal_x;
-
-
-    //camera.ppx = images[i].feature.img_size.width/2.0;
-    //camera.ppy = images[i].feature.img_size.height/2.0;
-    //camera.aspect = 1;//??? change to 1(1920/1080??=1.77)
-    //camera.focal = (images[i].size.height * 4.7 / 5.2) * work_scale/seam_scale;
-    //5.2 - > 10 = bigger
-    //4.8 maybe better
-    //camera.focal = (images[i].feature.img_size.width * 4.7 / focal_divider);
 
     camera.R = rot;
     camera.t = Mat::zeros(3,1,CV_32F);
@@ -833,11 +792,13 @@ JNIEXPORT jint JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativ
 
 	MatchesInfo matchInfo;
 	clock_t c_m1 = clock();
+#ifdef MINIMIZE
 	if(EXPERIMENT){
         matcher::match(nearest_feature, pairwise_matches);
 	}else{
 	    matcher::match(features, pairwise_matches,images.size()-1);
 	}
+#endif
 	clock_t c_m2 = clock();
 
 	vector<CameraParams> cameras;
@@ -882,9 +843,11 @@ JNIEXPORT jint JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativ
 	camera_set[1] = cameras[images.size()-1];
 	Mat comparedRot = cameras[images.size()-1].R.clone();
 	__android_log_print(ANDROID_LOG_DEBUG,"C++ Stitching","Minimized Point %d : %d",src.size(),dst.size());
+#ifdef MINIMIZE
 	int iterationCount = minimizeRotation(src,dst,camera_set);
-	//Check with ceres minimizer should be best solution
 	__android_log_print(ANDROID_LOG_DEBUG,"C++ Stitching","Minimize Iteration %d",iterationCount);
+#endif
+	//Check with ceres minimizer should be best solution
     printMatrix(comparedRot,"Before");
     printMatrix(camera_set[1].R,"After");
 	if(isBiggerThanThreshold(comparedRot,camera_set[1].R,0.2)){
