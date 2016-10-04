@@ -38,7 +38,6 @@ void remap(Mat src,Mat &dst,Mat xmap,Mat ymap){
             dst.at<Vec3b>(i,j) = src.at<Vec3b>(y_coord, x_coord);
         }
     }
-    __android_log_print(ANDROID_LOG_INFO,"C++ Remap","First %f %f",ymap.at<float>(0,0),xmap.at<float>(0,0));
 }
 
 

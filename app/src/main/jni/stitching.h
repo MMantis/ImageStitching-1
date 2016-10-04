@@ -81,7 +81,7 @@ JNIEXPORT void JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativ
 JNIEXPORT int JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativeStitch(JNIEnv*, jobject,jlong retAddr,jlong areaAddr,jlong rotAddr,jlong refinedRotAddr,jlong roiAddr,jlong k_rinvAddr);
 JNIEXPORT int JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativeKeyFrameSelection(JNIEnv *env, jobject,jfloatArray rotMat);
 
-
+Rect findResultROI(vector<Rect> rects);
 void tracking(jlong imgaddr,jlong glrotaddr,jlong glprojaddr,jlong retaddr);
 int findNearest(int from,int to,std::vector<ImagePackage> images,Mat &inputR);
 void findDescriptor(Mat img,std::vector<KeyPoint> &keypoints ,Mat &descriptor);

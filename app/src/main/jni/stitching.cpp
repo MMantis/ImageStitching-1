@@ -418,6 +418,23 @@ unsigned int np2(unsigned int w){
             return w;
 
 }
+
+Rect findResultROI(vector<Rect> rects){
+	Point tl(std::numeric_limits<int>::max(), std::numeric_limits<int>::max());
+	Point br(std::numeric_limits<int>::min(), std::numeric_limits<int>::min());
+	for(int i = 0 ; i < rects.size();i++){
+		tl.x = std::min(tl.x, rects[i].x);
+		tl.y = std::min(tl.y, rects[i].y);
+		br.x = std::max(br.x, rects[i].x + rects[i].width);
+		br.y = std::max(br.y, rects[i].y + rects[i].height);
+	}
+	Rect r(tl,br);
+	r.x -= 10;
+	r.y -= 10;
+	r.width += 20;
+	r.height += 20;
+	return r;
+}
 vector<int> findOverlap(vector<Point2i> p,vector<Size> size){
     vector<int> out;
     Rect last(p[p.size()-1],size[size.size()-1]);
@@ -788,6 +805,8 @@ JNIEXPORT jint JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativ
     Mat& refinedRot = *(Mat*)refinedRotAddr;
 	Mat& roiRot = *(Mat*)roiAddr;
 	Mat& k_rinvRot = *(Mat*)k_rinvAddr;
+	Mat& area = *(Mat*)areaAddr;
+
 	//do matcher
     matcher::create(0.3f,6,6);
 
@@ -892,12 +911,12 @@ JNIEXPORT jint JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativ
 
 	roiRot.create(images.size(),4,CV_32S);
 	k_rinvRot.create(images.size()*3,3,CV_32F);
-	vector<Rect> rect = findROI(warped_image_scale,images);
+	vector<Rect> rects = findROI(warped_image_scale,images);
 	Mat k_temp,rinv_temp,rinv32_temp;
+	double compose_work_aspect = compose_scale / work_scale;
 	for(int i = 0 ; i < images.size() ;i++){
 		rinv_temp = images[i].param.R.inv();
 		CameraParams param = images[i].param;
-		double compose_work_aspect = compose_scale / work_scale;
 		param.focal *= compose_work_aspect;
 		param.ppx *= compose_work_aspect;
 		param.ppy *= compose_work_aspect;
@@ -912,16 +931,25 @@ JNIEXPORT jint JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativ
 				k_rinvRot.at<float>(i*3+j,k) = k_rinv.at<float>(j,k);
 			}
 		}
-		__android_log_print(ANDROID_LOG_DEBUG,"C++ Stitching","ROI %d %d %d %d",rect[i].x,rect[i].y,rect[i].width,rect[i].height);
-		roiRot.at<int>(i,0) = rect[i].x;
-		roiRot.at<int>(i,1) = rect[i].y;
-		roiRot.at<int>(i,2) = rect[i].width;
-		roiRot.at<int>(i,3) = rect[i].height;
+		__android_log_print(ANDROID_LOG_DEBUG,"C++ Stitching","ROI %d %d %d %d",rects[i].x,rects[i].y,rects[i].width,rects[i].height);
+		roiRot.at<int>(i,0) = rects[i].x;
+		roiRot.at<int>(i,1) = rects[i].y;
+		roiRot.at<int>(i,2) = rects[i].width;
+		roiRot.at<int>(i,3) = rects[i].height;
 	}
-	__android_log_print(ANDROID_LOG_DEBUG,"C++ Stitching","ROI type %d",roiRot.type());
+	Rect result_rect = findResultROI(rects);
 	work_width = (warped_image_scale ) * M_PI * 2;
+
+	area.at<float>(0,0) = (work_width * compose_work_aspect/2)+result_rect.x;
+	area.at<float>(0,1) = result_rect.y;
+	area.at<float>(0,2) = result_rect.width;
+	area.at<float>(0,3) = result_rect.height;
+
+	__android_log_print(ANDROID_LOG_DEBUG,"C++ Stitching","Area : %f %f %f %f",area.at<float>(0,0),area.at<float>(0,1),area.at<float>(0,2),area.at<float>(0,3));
+
 	work_height = (((warped_image_scale) / cameras[0].aspect) * M_PI);//??? 1280
-	findWarpForSeam(warped_image_scale,seam_scale,work_scale,images,cameras);
+
+//	findWarpForSeam(warped_image_scale,seam_scale,work_scale,images,cameras);
 
 	//Create vector of var because need to call seam_finder
 	vector<Mat> masks_warped(num_images);
@@ -968,20 +996,8 @@ JNIEXPORT jint JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativ
 
 
 	clock_t c_m5 = clock();
-
-
-
-
-
-	for(int i = 0; i < images.size();i++){
-	__android_log_print(ANDROID_LOG_ERROR,"C++ Stitching","Seam Debug %d %d %d %d %d %d",
-            corners[i].x,corners[i].y,images_warped[i].size().width,images_warped[i].size().height,masks_warped[i].size().width,masks_warped[i].size().height);
-
-    }
 	clock_t c_m6 = clock();
-//	Mat out;
-	Mat& area = *(Mat*)areaAddr;
-	doComposition(warped_image_scale,cameras,images,nullptr,work_scale,compose_scale,blend_type,result,area);
+//	doComposition(warped_image_scale,cameras,images,nullptr,work_scale,compose_scale,blend_type,result,area);
 
 	__android_log_print(ANDROID_LOG_ERROR,"C++ Stitching","Composed %d Images",num_images);
 
@@ -1073,7 +1089,7 @@ JNIEXPORT int JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_native
     //__android_log_print(ANDROID_LOG_INFO,"Z_diff","%lf",min_acos_z*180/M_PI);
 
     if(min_acos_z > 0.3){
-        return 1;
+        return 0;
     }
     return 0;
 }

@@ -45,20 +45,9 @@ public class ImageStitchingNative {
         Core.flip(tran,rgba,0);
         Bitmap iBitmap = Bitmap.createBitmap(imageMat.rows(),imageMat.cols(),Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(rgba,iBitmap);
-        FileOutputStream fos2 = null;
-        try {
-            fos2 = new FileOutputStream("/sdcard/stitch/test"+mPictureSize+".jpeg");
-            iBitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos2);
-            fos2.flush();
-            fos2.close();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
 
         Factory.getFactory(null).getGlRenderer().getStitch().bitmapToCPU(iBitmap,mPictureSize);
-        Log.d("Java Stitch","Bitmap width"+iBitmap.getWidth()+":" +"height "+ iBitmap.getHeight());
+
         Factory.mainController.startRecordQuaternion();
         Log.d("JAVA Stitch", "Image Input Size : "+imageMat.size().width + "*" + imageMat.size().height);
         Mat ret = new Mat();
@@ -94,13 +83,15 @@ public class ImageStitchingNative {
 
         //Send ROI to GPU
         Factory.getFactory(null).getGlRenderer().getStitch().setROI(roiData,k_rinvData);
-        Bitmap bitmap = Bitmap.createBitmap(ret.cols(), ret.rows(), Bitmap.Config.ARGB_8888);
-        Mat test = new Mat(ret.height(),ret.width(),CvType.CV_8UC3);
-        Imgproc.cvtColor(ret, test, Imgproc.COLOR_BGRA2RGB);
-        Highgui.imwrite("/sdcard/stitch/pano"+mPictureSize+".jpg",test);
 
-        Utils.matToBitmap(ret, bitmap);
-        Log.d("JAVA Stitch", "Add Panorama Finished, Size :" + ret.size().width + "," + ret.size().height);
+        //Bitmap bitmap = Bitmap.createBitmap(ret.cols(), ret.rows(), Bitmap.Config.ARGB_8888);
+        //Mat test = new Mat(ret.height(),ret.width(),CvType.CV_8UC3);
+        //Imgproc.cvtColor(ret, test, Imgproc.COLOR_BGRA2RGB);
+        //Highgui.imwrite("/sdcard/stitch/pano"+mPictureSize+".jpg",test);
+
+        //Utils.matToBitmap(ret, bitmap);
+        //Log.d("JAVA Stitch", "Add Panorama Finished, Size :" + ret.size().width + "," + ret.size().height);
+
         float[] refinedMatArray = new float[16];
         refinedMat.get(0,0,refinedMatArray);
         float[] refinedQuad = Util.matrixToQuad(refinedMatArray);
@@ -110,11 +101,13 @@ public class ImageStitchingNative {
         Log.d("JAVA Stitch","Before Align Quad"+Arrays.toString(Factory.mainController.mQuaternion));
         Factory.mainController.updateQuaternion(refinedQuad,Factory.mainController.mDeltaQuaternion);
         Log.d("JAVA Stitch", "After Align Quad :"+Arrays.toString(Factory.mainController.mQuaternion));
-        mUploadingBitmap = bitmap;
+
         mBitmapArea = areaFloat;
+
 //        Factory.getFactory(null).getRSProcessor(null, null).requestAligning();;
 //        Factory.mainController.requireAlign();
-        Factory.getFactory(null).getGlRenderer().getSphere().updateBitmap(mUploadingBitmap, mBitmapArea);
+
+        Factory.getFactory(null).getGlRenderer().getSphere().updateArea(mBitmapArea);
         return rtCode;
     }
 
@@ -168,7 +161,7 @@ public class ImageStitchingNative {
         glRenderer.captureScreen();
         Log.d("Debug","Capture 2");
 
-        Factory.getFactory(null).getGlRenderer().getSphere().updateBitmap(mUploadingBitmap, mBitmapArea);
+//        Factory.getFactory(null).getGlRenderer().getSphere().updateBitmap(mUploadingBitmap, mBitmapArea);
 
     }
 

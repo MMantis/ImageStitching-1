@@ -32,6 +32,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.ShortBuffer;
+import java.util.Arrays;
 
 public class SphereObject {
 
@@ -74,7 +75,7 @@ public class SphereObject {
                     "}" +
                     "float diff_x = (((v_TexCoordinate.x*width_ratio) - (img_x))/(img_width));" +
                     "float diff_y = (((v_TexCoordinate.y*height_ratio) - (img_y))/(img_height));" +
-                    "gl_FragColor = texture2D(sTexture,vec2(diff_x,diff_y));" +
+                    "gl_FragColor = texture2D(sTexture,vec2(diff_x,1.0-diff_y));" +
                     "if(gl_FragColor.a != 0.0){" +
                     "gl_FragColor.a = alpha;" +
                     "}" +
@@ -89,6 +90,7 @@ public class SphereObject {
     private FloatBuffer mSphereBuffer;
     private ShortBuffer mIndexBuffer;
     //Only one texture
+    private int[] mTextures = new int[1];
     private int[] mFBO = new int[1];
     private int mFBOID;
     private int mFBOTex;
@@ -116,7 +118,9 @@ public class SphereObject {
         mIndexBuffer = mSphereShape.getIndices()[0];
         mIndexBuffer.position(0);
         mProgram = Util.loadShader(vertexShaderCode, fragmentShaderCode);
+
         createFBO();
+        loadGLTexture(context, R.drawable.pano, false);
 
 
     }
@@ -154,6 +158,22 @@ public class SphereObject {
         GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, 0);
     }
 
+    public void loadGLTexture(final Context context, final int texture, boolean show) {
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inSampleSize = 4;
+        final Bitmap bitmap = BitmapFactory.decodeResource(context.getResources(), texture, options);
+
+        GLES31.glGenTextures(1, this.mTextures, 0);
+        GLES31.glActiveTexture(GLES31.GL_TEXTURE0);
+        GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, this.mTextures[0]);
+        GLES31.glTexParameterf(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_MIN_FILTER, GLES31.GL_NEAREST_MIPMAP_NEAREST);
+        GLES31.glTexParameterf(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_MAG_FILTER, GLES31.GL_NEAREST);
+        GLES31.glTexParameterf(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_WRAP_S,GLES31.GL_CLAMP_TO_EDGE);
+        GLES31.glTexParameterf(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_WRAP_T,GLES31.GL_CLAMP_TO_EDGE);
+        if(show)
+        mockTexImage2D(bitmap);
+    }
+
 
     public void mockTexImage2D(Bitmap bitmap){
         mArea[0] = mArea[1] = 0;
@@ -175,6 +195,10 @@ public class SphereObject {
         Log.i("GLSphere", "Bitmap waiting for updated");
     }
 
+    public void updateArea(float[] area){
+        this.mArea = area;
+    }
+
     public void draw(float[] viewMatrix,float[] projectionMatrix,float alpha) {
 
 
@@ -188,6 +212,10 @@ public class SphereObject {
 
         GLES31.glActiveTexture(GLES31.GL_TEXTURE0);
         GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, glRenderer.getStitch().getFBOTexture());
+        int[] wh = new int[2];
+        GLES31.glGetTexLevelParameteriv(GLES31.GL_TEXTURE_2D, 0, GLES31.GL_TEXTURE_WIDTH, wh, 0);
+        GLES31.glGetTexLevelParameteriv(GLES31.GL_TEXTURE_2D, 0, GLES31.GL_TEXTURE_HEIGHT, wh, 1);
+
         if(mTexRequireUpdate){
             Log.i("GLSphere", "Bitmap updated,Return to normal activity.");
             GLUtils.texImage2D(GLES31.GL_TEXTURE_2D, 0, mQueueBitmap, 0);
@@ -283,6 +311,7 @@ public class SphereObject {
             mScreenBuffer = ByteBuffer.allocateDirect(mHeight * mWidth * 4);
             mScreenBuffer.order(ByteOrder.nativeOrder());
             GLES31.glReadPixels(0, 0, mWidth, mHeight, GLES31.GL_RGBA, GLES31.GL_UNSIGNED_BYTE, mScreenBuffer);
+            
             mScreenBuffer.rewind();
             byte pixelsBuffer[] = new byte[4*mHeight*mWidth];
             mScreenBuffer.get(pixelsBuffer);
@@ -293,7 +322,6 @@ public class SphereObject {
             Core.flip(m, mat, 0);
             Highgui.imwrite("/sdcard/stitch/readpixel.jpg",mat);
         }
-        GLES31.glBindTexture(GLES31.GL_TEXTURE_2D,0);
     }
 
 

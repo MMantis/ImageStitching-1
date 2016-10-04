@@ -83,6 +83,7 @@ public class GLRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
                 0.0f, 1.0f,
                 1.0f, 0.0f,
                 1.0f, 1.0f};
+        mStitch = new StitchObject(this);
         mCanvasObject = new CanvasObject(vertices,textures, mView.getActivity());
         mCanvasObjectProcessed = new CanvasObject(vertices,textures,mView.getActivity());
 
@@ -91,7 +92,7 @@ public class GLRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
         mTextureProcessed = new SurfaceTexture(mCanvasObjectProcessed.getTexturePos()[0]);
         mTextureNormal.setOnFrameAvailableListener(this);
         mTextureProcessed.setOnFrameAvailableListener(this);
-        mStitch = new StitchObject(this);
+
         GLES31.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         //(x (vertical),(horizontal)y,z)
         GLES31.glEnable(GLES31.GL_BLEND);
@@ -138,7 +139,7 @@ public class GLRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
 //        GLU.gluProject(123.4349f, 0, -169.89357f, mRotationMatrix, 0, mProjectionMatrix, 0, viewport,0,out,0);
 //        Log.d("gluProject", "" + Arrays.toString(out));
         //draws
-        mStitch.draw();
+        mStitch.drawTOFBO();
 
         synchronized(this) {
             if ( mUpdateST ) {
@@ -196,6 +197,7 @@ public class GLRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
         mHeight = height;
         GLES31.glViewport(0, 0, mWidth, mHeight);
         mSphere = new SphereObject(this,mWidth,mHeight);
+
         GLES31.glRenderbufferStorage(GLES31.GL_RENDERBUFFER, GLES11Ext.GL_RGBA8_OES,mWidth,mHeight);
         Log.v("GL", "Screen" + String.format("(Width:Height)[%d,%d]", mWidth,mHeight));
 
