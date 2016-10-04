@@ -89,7 +89,6 @@ public class SphereObject {
     private FloatBuffer mSphereBuffer;
     private ShortBuffer mIndexBuffer;
     //Only one texture
-    private int[] mTextures = new int[1];
     private int[] mFBO = new int[1];
     private int mFBOID;
     private int mFBOTex;
@@ -117,9 +116,7 @@ public class SphereObject {
         mIndexBuffer = mSphereShape.getIndices()[0];
         mIndexBuffer.position(0);
         mProgram = Util.loadShader(vertexShaderCode, fragmentShaderCode);
-
         createFBO();
-        loadGLTexture(context, R.drawable.pano, false);
 
 
     }
@@ -157,22 +154,6 @@ public class SphereObject {
         GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, 0);
     }
 
-    public void loadGLTexture(final Context context, final int texture, boolean show) {
-        BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inSampleSize = 4;
-        final Bitmap bitmap = BitmapFactory.decodeResource(context.getResources(), texture, options);
-
-        GLES31.glGenTextures(1, this.mTextures, 0);
-        GLES31.glActiveTexture(GLES31.GL_TEXTURE0);
-        GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, this.mTextures[0]);
-        GLES31.glTexParameterf(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_MIN_FILTER, GLES31.GL_NEAREST_MIPMAP_NEAREST);
-        GLES31.glTexParameterf(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_MAG_FILTER, GLES31.GL_NEAREST);
-        GLES31.glTexParameterf(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_WRAP_S,GLES31.GL_CLAMP_TO_EDGE);
-        GLES31.glTexParameterf(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_WRAP_T,GLES31.GL_CLAMP_TO_EDGE);
-        if(show)
-        mockTexImage2D(bitmap);
-    }
-
 
     public void mockTexImage2D(Bitmap bitmap){
         mArea[0] = mArea[1] = 0;
@@ -206,7 +187,7 @@ public class SphereObject {
         int alphah = GLES31.glGetUniformLocation(mProgram,"alpha");
 
         GLES31.glActiveTexture(GLES31.GL_TEXTURE0);
-        GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, this.mTextures[0]);
+        GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, glRenderer.getStitch().getFBOTexture());
         if(mTexRequireUpdate){
             Log.i("GLSphere", "Bitmap updated,Return to normal activity.");
             GLUtils.texImage2D(GLES31.GL_TEXTURE_2D, 0, mQueueBitmap, 0);
@@ -312,6 +293,7 @@ public class SphereObject {
             Core.flip(m, mat, 0);
             Highgui.imwrite("/sdcard/stitch/readpixel.jpg",mat);
         }
+        GLES31.glBindTexture(GLES31.GL_TEXTURE_2D,0);
     }
 
 

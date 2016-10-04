@@ -324,6 +324,11 @@ void warpFeature(float warped_image_scale ,vector<CameraParams> cameras,vector<I
 	}
 
 }
+inline void vectorMatrixMultiply(float vec[],float matrix[], float *out ){
+	out[0] = matrix[0] * vec[0] + matrix[1] * vec[1] + matrix[2] * vec[2];
+	out[1] = matrix[3] * vec[0] + matrix[4] * vec[1] + matrix[5] * vec[2];
+	out[2] = matrix[6] * vec[0] + matrix[7] * vec[1] + matrix[8] * vec[2];
+}
 inline double calcOpticalDiff(Mat mat1, Mat mat2){
         Mat diff = mat1.inv() * mat2;
         double x = atan2(diff.at<float>(2,1),diff.at<float>(2,2));
@@ -439,10 +444,109 @@ void threadTask(int msg){
     __android_log_print(ANDROID_LOG_INFO,"Thread","Hello %d %lf",msg,t);
 }
 
+vector<Rect> findROI(float warped_image_scale,std::vector<ImagePackage> p_img){
+	double compose_work_aspect = compose_scale / work_scale;
+	clock_t c_t0 = std::clock();
+	vector<Rect> rois;
+	float u,v,w;
+	int count = 0;
+	float vec[3] = {0,0,1};
+	Mat R,K,K_inv;
+
+	float r_kinv[9] = {0};
+	float out[9];
+	for(int i = 0; i < p_img.size();i++){
+		float tl_x = MAXFLOAT;
+		float tl_y = MAXFLOAT;
+		float br_x = -MAXFLOAT;
+		float br_y = -MAXFLOAT;
+		p_img[i].param.R.convertTo(R,CV_32F);
+		CameraParams param = p_img[i].param;
+		param.focal *= compose_work_aspect;
+		param.ppx *= compose_work_aspect;
+		param.ppy *= compose_work_aspect;
+
+		K = param.K().inv();
+
+		K.convertTo(K_inv,CV_32F);
+		Mat r_kinv_mat = R * K_inv;
+		//K == double ? R == float?
+		for(int q = 0 ; q < 3 ; q++){
+			for(int s = 0; s < 3 ; s++){
+				r_kinv[q*3+s] = r_kinv_mat.at<float>(q,s);
+			}
+		}
+		__android_log_print(ANDROID_LOG_DEBUG,"C++ FindROI"," Size : %d %d",p_img[i].full_image.cols,p_img[i].full_image.rows);
+		for(int x = 0 ; x < p_img[i].full_image.rows;x++){
+
+			vec[0] = 0;
+			vec[1] = x;
+
+			vectorMatrixMultiply(vec,r_kinv,out);
+			u = warped_image_scale*compose_work_aspect * atan2f(out[0], out[2]);
+			w = out[1] / sqrtf(out[0] * out[0] + out[1] * out[1] + out[2] * out[2]);
+			v = warped_image_scale*compose_work_aspect * (static_cast<float>(CV_PI) - acosf(w == w ? w : 0));
+			if(u < tl_x) tl_x = u;
+			if(v < tl_y) tl_y = v;
+			if(u > br_x) br_x = u;
+			if(v > br_y) br_y = v;
+
+			vec[0] = p_img[i].full_image.cols-1;
+			vec[1] = x;
+			vectorMatrixMultiply(vec,r_kinv,out);
+			u = warped_image_scale*compose_work_aspect * atan2f(out[0], out[2]);
+			w = out[1] / sqrtf(out[0] * out[0] + out[1] * out[1] + out[2] * out[2]);
+			v = warped_image_scale*compose_work_aspect * (static_cast<float>(CV_PI) - acosf(w == w ? w : 0));
+
+			if(u < tl_x) tl_x = u;
+			if(v < tl_y) tl_y = v;
+			if(u > br_x) br_x = u;
+			if(v > br_y) br_y = v;
+
+		}
+		for(int y = 0 ; y< p_img[i].full_image.cols ;y++){
+			vec[0] = y;
+			vec[1] = 0;
+
+			vectorMatrixMultiply(vec,r_kinv,out);
+			u = warped_image_scale*compose_work_aspect * atan2f(out[0], out[2]);
+			w = out[1] / sqrtf(out[0] * out[0] + out[1] * out[1] + out[2] * out[2]);
+			v = warped_image_scale*compose_work_aspect * (static_cast<float>(CV_PI) - acosf(w == w ? w : 0));
+
+			if(u < tl_x) tl_x = u;
+			if(v < tl_y) tl_y = v;
+			if(u > br_x) br_x = u;
+			if(v > br_y) br_y = v;
+
+
+
+			vec[0] = y;
+			vec[1] = p_img[i].full_image.rows-1;
+			vectorMatrixMultiply(vec,r_kinv,out);
+			u = warped_image_scale*compose_work_aspect * atan2f(out[0], out[2]);
+			w = out[1] / sqrtf(out[0] * out[0] + out[1] * out[1] + out[2] * out[2]);
+			v = warped_image_scale*compose_work_aspect * (static_cast<float>(CV_PI) - acosf(w == w ? w : 0));
+
+			if(u < tl_x) tl_x = u;
+			if(v < tl_y) tl_y = v;
+			if(u > br_x) br_x = u;
+			if(v > br_y) br_y = v;
+		}
+
+		__android_log_print(ANDROID_LOG_DEBUG,"C++ FindROI","%f %f %f %f",tl_x,tl_y,br_x,br_y);
+		rois.push_back(Rect(Point(tl_x,tl_y),Point(br_x,br_y)));
+	}
+	clock_t c_t1 = std::clock();
+	__android_log_print(ANDROID_LOG_DEBUG,"C++ FindROI"," %lf %d",(double)(c_t1-c_t0)/CLOCKS_PER_SEC,count);
+	return rois;
+}
 //need to re-done in some part
 void doComposition(float warped_image_scale,vector<CameraParams> cameras,vector<ImagePackage> &p_img,Ptr<ExposureCompensator> compensator,float work_scale,float compose_scale,int blend_type,Mat &result,Mat &area){
-	cv::FileStorage fs("/sdcard/stitch/position.yml", cv::FileStorage::WRITE);
+	cv::FileStorage pfs("/sdcard/stitch/position.yml", cv::FileStorage::WRITE);
+
 	double compose_work_aspect = compose_scale / work_scale;
+
+
 	Mat img_warped;
 	Mat dilated_mask, seam_mask;
 	Mat mask, mask_warped;
@@ -451,6 +555,7 @@ void doComposition(float warped_image_scale,vector<CameraParams> cameras,vector<
 	Ptr<WarperCreator> warper_creator = new cv::SphericalWarper();
 	Ptr<RotationWarper> warper = warper_creator->create(warped_image_scale * compose_work_aspect);
 	__android_log_print(ANDROID_LOG_DEBUG,"C++ Composition","Warp Scale : %f",warped_image_scale*compose_work_aspect);
+
 	for (int i = 0; i < p_img.size(); ++i)
 	{
 
@@ -507,7 +612,7 @@ void doComposition(float warped_image_scale,vector<CameraParams> cameras,vector<
 			SphericalProjector projector;
 			projector.scale = warped_image_scale*compose_work_aspect;
 			projector.setCameraParams(K,cameras[i].R);
-			
+			__android_log_print(ANDROID_LOG_DEBUG,"C++ Composition","TimeSpend Rect %d %d %d %d",r.x,r.y,r.width,r.height);
 			mapfs << "k_rinv" << Mat(3,3,CV_32F,projector.k_rinv);
 			mapfs << "r_kinv" << Mat(3,3,CV_32F,projector.r_kinv);
 
@@ -597,9 +702,9 @@ void doComposition(float warped_image_scale,vector<CameraParams> cameras,vector<
 		sprintf(warp_file_name,"/sdcard/stitch/warped%d.jpg",i);
 		imwrite(warp_file_name,p_img[i].compose_image_warped);
 		imwrite(mask_file_name,p_img[i].compose_mask_warped);
-		fs << "c" << p_img[i].compose_corner;
-		fs << "s_x" << p_img[i].compose_image_warped.cols;
-		fs << "s_y" << p_img[i].compose_image_warped.rows;
+		pfs << "c" << p_img[i].compose_corner;
+		pfs << "s_x" << p_img[i].compose_image_warped.cols;
+		pfs << "s_y" << p_img[i].compose_image_warped.rows;
 		clock_t c_c7 = std::clock();
 
         c_feed_total+=(double)(c_c7-c_c6);
@@ -675,12 +780,14 @@ JNIEXPORT void JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativ
 }
 
 
-JNIEXPORT jint JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativeStitch(JNIEnv*, jobject,jlong retAddr,jlong areaAddr,jlong rotAddr,jlong refinedRotAddr){
+JNIEXPORT jint JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativeStitch(JNIEnv*, jobject,jlong retAddr,jlong areaAddr,jlong rotAddr,jlong refinedRotAddr,jlong roiAddr,jlong k_rinvAddr){
 
 	__android_log_print(ANDROID_LOG_INFO,"C++ Stitching","Start");
 	Mat& result = *(Mat*)retAddr;
 	Mat& retRot = *(Mat*)rotAddr;
     Mat& refinedRot = *(Mat*)refinedRotAddr;
+	Mat& roiRot = *(Mat*)roiAddr;
+	Mat& k_rinvRot = *(Mat*)k_rinvAddr;
 	//do matcher
     matcher::create(0.3f,6,6);
 
@@ -783,7 +890,35 @@ JNIEXPORT jint JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativ
 	else
 		warped_image_scale = static_cast<float>(focals[focals.size() / 2 - 1] + focals[focals.size() / 2]) * 0.5f;
 
+	roiRot.create(images.size(),4,CV_32S);
+	k_rinvRot.create(images.size()*3,3,CV_32F);
+	vector<Rect> rect = findROI(warped_image_scale,images);
+	Mat k_temp,rinv_temp,rinv32_temp;
+	for(int i = 0 ; i < images.size() ;i++){
+		rinv_temp = images[i].param.R.inv();
+		CameraParams param = images[i].param;
+		double compose_work_aspect = compose_scale / work_scale;
+		param.focal *= compose_work_aspect;
+		param.ppx *= compose_work_aspect;
+		param.ppy *= compose_work_aspect;
+		param.K().convertTo(k_temp,CV_32F);
 
+		rinv_temp.convertTo(rinv32_temp,CV_32F);
+		Mat k_rinv = k_temp * rinv32_temp;
+		printMatrix(k_temp,"K_RINV1");
+		printMatrix(rinv_temp,"K_RINV2");
+		for(int j = 0 ; j < 3 ;j ++){
+			for(int k = 0 ; k < 3 ; k++){
+				k_rinvRot.at<float>(i*3+j,k) = k_rinv.at<float>(j,k);
+			}
+		}
+		__android_log_print(ANDROID_LOG_DEBUG,"C++ Stitching","ROI %d %d %d %d",rect[i].x,rect[i].y,rect[i].width,rect[i].height);
+		roiRot.at<int>(i,0) = rect[i].x;
+		roiRot.at<int>(i,1) = rect[i].y;
+		roiRot.at<int>(i,2) = rect[i].width;
+		roiRot.at<int>(i,3) = rect[i].height;
+	}
+	__android_log_print(ANDROID_LOG_DEBUG,"C++ Stitching","ROI type %d",roiRot.type());
 	work_width = (warped_image_scale ) * M_PI * 2;
 	work_height = (((warped_image_scale) / cameras[0].aspect) * M_PI);//??? 1280
 	findWarpForSeam(warped_image_scale,seam_scale,work_scale,images,cameras);
@@ -880,9 +1015,9 @@ void printMatrix(Mat tmp,string text){
 		tmp.convertTo(mat,CV_32F);
 	}
 	__android_log_print(ANDROID_LOG_VERBOSE, "C++ Stitching", "Matrix %s############################", text.c_str());
-	__android_log_print(ANDROID_LOG_VERBOSE, "C++ Stitching", "[%f %f %f]", mat.at<float>(0,0),mat.at<float>(0,1),mat.at<float>(0,2));
-	__android_log_print(ANDROID_LOG_VERBOSE, "C++ Stitching", "[%f %f %f]", mat.at<float>(1,0),mat.at<float>(1,1),mat.at<float>(1,2));
-	__android_log_print(ANDROID_LOG_VERBOSE, "C++ Stitching", "[%f %f %f]", mat.at<float>(2,0),mat.at<float>(2,1),mat.at<float>(2,2));
+	__android_log_print(ANDROID_LOG_VERBOSE, "C++ Stitching", "%s [%f %f %f]", text.c_str() , mat.at<float>(0,0),mat.at<float>(0,1),mat.at<float>(0,2));
+	__android_log_print(ANDROID_LOG_VERBOSE, "C++ Stitching", "%s [%f %f %f]", text.c_str() , mat.at<float>(1,0),mat.at<float>(1,1),mat.at<float>(1,2));
+	__android_log_print(ANDROID_LOG_VERBOSE, "C++ Stitching", "%s [%f %f %f]", text.c_str() , mat.at<float>(2,0),mat.at<float>(2,1),mat.at<float>(2,2));
 	__android_log_print(ANDROID_LOG_VERBOSE, "C++ Stitching", "Matrix ##############################");
 }
 inline int glhProjectf(float objx, float objy, float objz, float *modelview, float *projection, int *viewport, float *windowCoordinate) {

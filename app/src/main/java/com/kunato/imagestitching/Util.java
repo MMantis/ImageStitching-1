@@ -123,7 +123,13 @@ public class Util {
         quad[2] = -((matrix[4]-matrix[1])/(4*quad[3]));
         return quad;
     }
-
+    public static float[] vectorMatrixMultiply(float[] vec, float[] matrix){
+        return new float[]{
+                matrix[0]*vec[0]+matrix[1]*vec[1]+matrix[2]*vec[2],
+                matrix[3]*vec[0]+matrix[4]*vec[1]+matrix[5]*vec[2],
+                matrix[6]*vec[0]+matrix[7]*vec[1]+matrix[8]*vec[2]
+        };
+    }
 
     public static float[] naivMatrixMultiply(float[] B, float[] A) {
         int mA, nA, mB, nB;

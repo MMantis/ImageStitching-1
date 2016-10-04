@@ -18,6 +18,7 @@ package com.kunato.imagestitching;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
 import android.opengl.GLES31;
 import android.opengl.GLUtils;
 import android.util.Log;
@@ -39,6 +40,8 @@ import java.util.Arrays;
 import java.util.List;
 
 import javax.microedition.khronos.opengles.GL;
+
+import static com.kunato.imagestitching.Util.vectorMatrixMultiply;
 
 public class StitchObject {
 
@@ -169,14 +172,25 @@ public class StitchObject {
     private int[] corners = new int[NUMBER_OF_TEXTURE*2];
     private int[] sizes = new int[NUMBER_OF_TEXTURE*2];
     private int[] mFBO = new int[1];
+    private int mCurrentSize = 1;
     private int mFBOID;
     private int mFBOTex;
-
+    private static final float SCALE = 1468.803406f;
+    private Bitmap[] mCPUBitmap = new Bitmap[3];
+    int[] cof = new int[NUMBER_OF_TEXTURE*2];
+    int[] sof = new int[NUMBER_OF_TEXTURE*2];
+    float[] k_rinvData = new float[]{ 1.46880334e+03f, 0.f, 5.56620422e+02f, 0.f, 1.46880334e+03f,  9.87914978e+02f, 0.f, 0.f, 1.f,
+            1.56739111e+03f, -3.09704323e+01f, 9.76510925e+01f, 3.19323425e+02f, 1.44898230e+03f, 9.65319824e+02f, 2.95225173e-01f, -1.96384918e-02f, 9.55225825e-01f ,
+            1.52318079e+03f, 3.44877005e+00f, -3.83559906e+02f, 5.54351318e+02f, 1.48857654e+03f, 7.81149048e+02f, 5.71894169e-01f, 2.03441400e-02f, 8.20075095e-01f ,
+    };
     private ByteBuffer mScreenBuffer;
     private GLRenderer glRenderer;
     private int mWidth = 0;
     private int mHeight = 0;
     public float[] mArea = {0,0,0,0};
+    private boolean mUpdate = false;
+    private Context context;
+
     public StitchObject(GLRenderer renderer) {
         Context context = renderer.mView.getActivity();
         glRenderer = renderer;
@@ -190,9 +204,11 @@ public class StitchObject {
         pTexCoord = ByteBuffer.allocateDirect(8 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
         pTexCoord.put ( ttmp );
         pTexCoord.position(0);
+        this.context = context;
+//        loadGLTexture();
 
-        loadGLTexture(context);
-        createFBO();
+        GLES31.glGenTextures(3, this.mTextures, 0);
+
 
     }
 
@@ -229,19 +245,78 @@ public class StitchObject {
         GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, 0);
     }
 
-    public void loadBitmap(int i, Bitmap bitmap){
+    public void setROI(int[] roi,float[] k_rinv){
+        Log.d("Stitch GPU","Set ROI");
+        for(int i = 0 ; i < roi.length ;i++){
 
+            if(i%4 == 0){
+                cof[i/2] = roi[i];
+            }
+            if(i%4 == 1){
+                cof[(i/2)+1] = roi[i];
+            }
+            if(i%4 == 2){
+                sof[(i-2)/2] = roi[i];
+            }
+            if(i%4 == 3){
+                sof[((i-2)/2)+1] = roi[i];
+            }
+        }
+        k_rinvData = k_rinv;
+//        loadBitmap(mCurrentSize,null);
+        mCurrentSize+=1;
+        mUpdate = true;
+    }
+
+    public void loadBitmap(int i){
         GLES31.glActiveTexture(GLES31.GL_TEXTURE0+i);
         GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, this.mTextures[i]);
         GLES31.glTexParameterf(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_MIN_FILTER, GLES31.GL_NEAREST_MIPMAP_NEAREST);
         GLES31.glTexParameterf(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_MAG_FILTER, GLES31.GL_NEAREST);
         GLES31.glTexParameterf(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_WRAP_S,GLES31.GL_CLAMP_TO_EDGE);
         GLES31.glTexParameterf(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_WRAP_T,GLES31.GL_CLAMP_TO_EDGE);
-        GLUtils.texImage2D(GLES31.GL_TEXTURE_2D, 0, bitmap, 0);
+        GLUtils.texImage2D(GLES31.GL_TEXTURE_2D, 0, mCPUBitmap[i], 0);
         GLES31.glGenerateMipmap(GLES31.GL_TEXTURE_2D);
 
+        mCPUBitmap[i].recycle();
+        updateParam();
+        createFBO();
+
     }
-    public void loadGLTexture(final Context context) {
+    public void bitmapToCPU(Bitmap bitmap,int index){
+        mCPUBitmap[index] = bitmap;
+    }
+//    private void bitmapToCPU(){
+//        for(int i = 0; i < 3;i++) {
+//            if (i == 0) {
+//                try {
+//                    InputStream is = context.getAssets().open("img0.jpg");
+//                    mCPUBitmap[i] = BitmapFactory.decodeStream(is);
+//
+//                } catch (IOException e) {
+//                    Log.d("Stitch GPU", "Loadfile Error");
+//                }
+//            } else if (i == 1) {
+//
+//                try {
+//                    InputStream is = context.getAssets().open("img1.jpg");
+//                    mCPUBitmap[i] = BitmapFactory.decodeStream(is);
+//                } catch (IOException e) {
+//                    Log.d("Stitch GPU", "Loadfile Error");
+//                }
+//            } else if (i == 2) {
+//                try {
+//                    InputStream is = context.getAssets().open("img2.jpg");
+//                    mCPUBitmap[i] = BitmapFactory.decodeStream(is);
+//                } catch (IOException e) {
+//                    Log.d("Stitch GPU", "Loadfile Error");
+//                }
+//            }
+//        }
+//
+//    }
+
+    public void loadGLTexture() {
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inSampleSize = 1;
         GLES31.glGenTextures(2, this.mTextures, 0);
@@ -274,7 +349,7 @@ public class StitchObject {
                     Log.d("Stitch GPU","Loadfile Error");
                 }
             }
-            loadBitmap( i, bitmap);
+            loadBitmap( i);
 //            mWidth += bitmap.getWidth();
 //            if(mHeight < bitmap.getHeight()){
 //                mHeight = bitmap.getHeight();
@@ -286,11 +361,12 @@ public class StitchObject {
             GLES31.glGetTexLevelParameterfv(GLES31.GL_TEXTURE_2D,0,GLES31.GL_TEXTURE_HEIGHT,size,1);
             Log.d("Stitch GPU","Loaded Texture Size :"+ Arrays.toString(size));
         }
-        int[] cof = new int[]{-532,1437,-110,1408,360,1467};
-        int[] sof = new int[]{1034,1701,1058,1701,1047,1700};
+    }
+    public void updateParam(){
+
         float min_x = 10000;
         float min_y = 10000;
-        for(int i = 0 ; i < cof.length ;i++){
+        for(int i = 0 ; i < mCurrentSize*2 ;i++){
             if(cof[i] < min_x && i%2 == 0){
                 min_x = cof[i];
             }
@@ -319,8 +395,7 @@ public class StitchObject {
         int max_x_index = -1;
         int max_y_index = -1;
 
-        for(int i = 0 ; i < cof.length ;i++){
-            Log.d("TEST","a"+i%2);
+        for(int i = 0 ; i < mCurrentSize*2 ;i++){
             if(cof[i] < min_x && i%2 == 0){
                 min_x = cof[i];
             }
@@ -346,11 +421,24 @@ public class StitchObject {
         Log.d("Stitch GPU","Size ("+mWidth+","+mHeight+") , TL ("+mTLX+","+mTLY+")");
         sizes = sof;
     }
-
-
+    public int getFBOTexture(){
+        return mFBOTex;
+    }
 
     public void draw() {
+        if(!mUpdate)
+            return;
         long start = System.currentTimeMillis();
+        if(mCurrentSize == 2){
+            loadBitmap(0);
+            loadBitmap(1);
+        }
+        else{
+            loadBitmap(mCurrentSize-1);
+        }
+        int count = 0;
+
+        long start2 = System.currentTimeMillis();
         GLES31.glUseProgram(mProgram);
         GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, mFBOID);
         GLES31.glViewport(0, 0, mWidth, mHeight);
@@ -371,47 +459,44 @@ public class StitchObject {
         GLES31.glEnableVertexAttribArray(ph);
         GLES31.glEnableVertexAttribArray(tch);
         //START OF RENDERING
-        int[] texArray = new int[mTextures.length];
-        for(int i = 0 ; i < mTextures.length;i++){
+        int[] texArray = new int[mCurrentSize];
+        for(int i = 0 ; i <mCurrentSize;i++){
             GLES31.glActiveTexture(GLES31.GL_TEXTURE0+i);
             GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, mTextures[i]);
             texArray[i] = i;
         }
-        GLES31.glUniform1i(lh,mTextures.length);
+        GLES31.glUniform1i(lh,mCurrentSize);
 
         Log.d("Stitch GPU","COF : "+Arrays.toString(corners));
         Log.d("Stitch GPU","SizeList : "+Arrays.toString(sizes));
-        GLES31.glUniform2iv(sh,mTextures.length,sizes,0);
-        GLES31.glUniform2iv(ch,mTextures.length,corners,0);
-        GLES31.glUniform1iv(th,mTextures.length,texArray,0);
+        Log.d("Stitch GPU","TexArray : "+Arrays.toString(texArray));
+        GLES31.glUniform2iv(sh,mCurrentSize,sizes,0);
+        GLES31.glUniform2iv(ch,mCurrentSize,corners,0);
+        GLES31.glUniform1iv(th,mCurrentSize,texArray,0);
         GLES31.glUniform2i(tlh,mTLX,mTLY);
         GLES31.glUniform2i(wsh,mWidth,mHeight);
-        float[] r_kinvData = new float[]{1,0,0,0,1,0,0,0,1,1,0,0,0,1,0,0,0,1,1,0,0,0,1,0,0,0,1,1,0,0,0,1,0,0,0,1,1,0,0,0,1,0,0,0,1,1,0,0,0,1,0,0,0,1,1,0,0,0,1,0,0,0,1,};
-        float[] k_rinvData = new float[]{ 1.46880334e+03f, 0.f, 5.56620422e+02f, 0.f, 1.46880334e+03f,  9.87914978e+02f, 0.f, 0.f, 1.f,
-                1.56739111e+03f, -3.09704323e+01f, 9.76510925e+01f, 3.19323425e+02f, 1.44898230e+03f, 9.65319824e+02f, 2.95225173e-01f, -1.96384918e-02f, 9.55225825e-01f ,
-                1.52318079e+03f, 3.44877005e+00f, -3.83559906e+02f, 5.54351318e+02f, 1.48857654e+03f, 7.81149048e+02f, 5.71894169e-01f, 2.03441400e-02f, 8.20075095e-01f ,
-                 };
-        GLES31.glUniformMatrix3fv(r_kinvh,mTextures.length,false,r_kinvData,0);
-        GLES31.glUniformMatrix3fv(k_rinvh,mTextures.length,true,k_rinvData,0);
+        GLES31.glUniformMatrix3fv(k_rinvh,mCurrentSize,true,k_rinvData,0);
         GLES31.glDrawArrays(GLES31.GL_TRIANGLE_STRIP, 0, 4);
-
         long end = System.currentTimeMillis();
-        Log.d("Stitching GPU","TimeSpend : "+(end-start)*0.001);
+        Log.d("Stitch GPU","TimeSpend : "+(end-start2)*0.001+ " : "+(start2-start)*0.001 + " ; "+count);
         //END OF RENDERING
-        mScreenBuffer = ByteBuffer.allocateDirect(mHeight * mWidth * 4);
-        mScreenBuffer.order(ByteOrder.nativeOrder());
-        GLES31.glReadPixels(0, 0, mWidth, mHeight, GLES31.GL_RGBA, GLES31.GL_UNSIGNED_BYTE, mScreenBuffer);
+//        mScreenBuffer = ByteBuffer.allocateDirect(mHeight * mWidth * 4);
+//        mScreenBuffer.order(ByteOrder.nativeOrder());
+//        GLES31.glReadPixels(0, 0, mWidth, mHeight, GLES31.GL_RGBA, GLES31.GL_UNSIGNED_BYTE, mScreenBuffer);
+//
+//        mScreenBuffer.rewind();
+//        byte pixelsBuffer[] = new byte[4*mHeight*mWidth];
+//        mScreenBuffer.get(pixelsBuffer);
+//        Mat mat = new Mat(mHeight, mWidth, CvType.CV_8UC4);
+//        mat.put(0, 0, pixelsBuffer);
+//        Mat m = new Mat();
+//        Imgproc.cvtColor(mat, m, Imgproc.COLOR_RGBA2BGR);
+//        Core.flip(m, mat, 0);
+//        Highgui.imwrite("/sdcard/stitch/stitchfbo.jpg",mat);
 
-        mScreenBuffer.rewind();
-        byte pixelsBuffer[] = new byte[4*mHeight*mWidth];
-        mScreenBuffer.get(pixelsBuffer);
-        Mat mat = new Mat(mHeight, mWidth, CvType.CV_8UC4);
-        mat.put(0, 0, pixelsBuffer);
-        Mat m = new Mat();
-        Imgproc.cvtColor(mat, m, Imgproc.COLOR_RGBA2BGR);
-        Core.flip(m, mat, 0);
-        Highgui.imwrite("/sdcard/stitch/stitchfbo.jpg",mat);
+        //END OF IMWRITE
         GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, 0);
+        mUpdate = false;
     }
 
 

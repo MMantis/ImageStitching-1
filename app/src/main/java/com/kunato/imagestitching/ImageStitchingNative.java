@@ -1,6 +1,7 @@
 package com.kunato.imagestitching;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.util.Log;
 
 import org.opencv.android.Utils;
@@ -10,6 +11,7 @@ import org.opencv.imgproc.Imgproc;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
@@ -28,33 +30,70 @@ public class ImageStitchingNative {
 
     public native int nativeKeyFrameSelection(float[] rotMat);
     public native void nativeAligning(long imgAddr,long glRotAddr,long retMatAddr);
-    public native int nativeStitch(long retAddr,long areaAddr,long rotAddr,long refineRotAddr);
+    public native int nativeStitch(long retAddr,long areaAddr,long rotAddr,long refineRotAddr,long roiAddr,long k_rinvAddr);
     public native void nativeAddStitch(long imgAddr,long rotAddr);
     public int keyFrameSelection(float[] rotMat) {
         return nativeKeyFrameSelection(rotMat);
     }
     public int addToPano(Mat imageMat, Mat rotMat,int mPictureSize){
+        Log.d("Java Stitch","Current Picture Size : "+mPictureSize);
+        //Load Image to GPU
+        Mat rgba = new Mat(imageMat.cols(),imageMat.rows(),CvType.CV_8UC4);
+        Imgproc.cvtColor(imageMat,rgba,Imgproc.COLOR_BGR2RGBA);
+        Mat tran = new Mat(imageMat.rows(),imageMat.cols(),CvType.CV_8UC4);
+        Core.transpose(rgba,tran);
+        Core.flip(tran,rgba,0);
+        Bitmap iBitmap = Bitmap.createBitmap(imageMat.rows(),imageMat.cols(),Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(rgba,iBitmap);
+        FileOutputStream fos2 = null;
+        try {
+            fos2 = new FileOutputStream("/sdcard/stitch/test"+mPictureSize+".jpeg");
+            iBitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos2);
+            fos2.flush();
+            fos2.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        Factory.getFactory(null).getGlRenderer().getStitch().bitmapToCPU(iBitmap,mPictureSize);
+        Log.d("Java Stitch","Bitmap width"+iBitmap.getWidth()+":" +"height "+ iBitmap.getHeight());
         Factory.mainController.startRecordQuaternion();
         Log.d("JAVA Stitch", "Image Input Size : "+imageMat.size().width + "*" + imageMat.size().height);
         Mat ret = new Mat();
+        Mat roi = new Mat();
+        Mat k_rinv = new Mat();
         Mat area = new Mat(1,4,CvType.CV_32F);
         Mat rot = new Mat(3,3,CvType.CV_32F);
         Log.d("JAVA Stitch", "Image Rotation Input : "+rotMat.dump());
         nativeAddStitch(imageMat.getNativeObjAddr(), rotMat.getNativeObjAddr());
         Mat refinedMat = new Mat(4,4,CvType.CV_32F);
-        int rtCode = nativeStitch(ret.getNativeObjAddr(), area.getNativeObjAddr(),rot.getNativeObjAddr(),refinedMat.getNativeObjAddr());
+        int rtCode = nativeStitch(ret.getNativeObjAddr(), area.getNativeObjAddr(),rot.getNativeObjAddr(),refinedMat.getNativeObjAddr(),roi.getNativeObjAddr(),k_rinv.getNativeObjAddr());
         Log.d("JAVA Stitch", "JNI Return Code : "+rtCode + "");
         float[] areaFloat = new float[4];
         area.get(0, 0, areaFloat);
+
+
         //areaFloat[0]+=0;
         //areaFloat[1]-=150;
         Log.d("JAVA Stitch", "Return Area [" + Arrays.toString(areaFloat)+"]");
+
         if(rtCode == -1){
             return 1;
         }
         if(rtCode != 1) {
             return rtCode;
         }
+        int[] roiData = new int[roi.rows()*roi.cols()];
+        float[] k_rinvData = new float[k_rinv.rows()*k_rinv.cols()];
+        roi.get(0, 0, roiData);
+        k_rinv.get(0,0,k_rinvData);
+        Log.d("JAVA Stitch", "ROI : "+Arrays.toString(roiData));
+        Log.d("JAVA Stitch", "K_RINV : "+Arrays.toString(k_rinvData));
+
+        //Send ROI to GPU
+        Factory.getFactory(null).getGlRenderer().getStitch().setROI(roiData,k_rinvData);
         Bitmap bitmap = Bitmap.createBitmap(ret.cols(), ret.rows(), Bitmap.Config.ARGB_8888);
         Mat test = new Mat(ret.height(),ret.width(),CvType.CV_8UC3);
         Imgproc.cvtColor(ret, test, Imgproc.COLOR_BGRA2RGB);
@@ -76,7 +115,6 @@ public class ImageStitchingNative {
 //        Factory.getFactory(null).getRSProcessor(null, null).requestAligning();;
 //        Factory.mainController.requireAlign();
         Factory.getFactory(null).getGlRenderer().getSphere().updateBitmap(mUploadingBitmap, mBitmapArea);
-
         return rtCode;
     }
 

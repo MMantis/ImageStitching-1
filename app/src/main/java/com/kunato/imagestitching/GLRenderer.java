@@ -138,10 +138,8 @@ public class GLRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
 //        GLU.gluProject(123.4349f, 0, -169.89357f, mRotationMatrix, 0, mProjectionMatrix, 0, viewport,0,out,0);
 //        Log.d("gluProject", "" + Arrays.toString(out));
         //draws
-        if(mFirstFrame){
-            mStitch.draw();
-            mFirstFrame = false;
-        }
+        mStitch.draw();
+
         synchronized(this) {
             if ( mUpdateST ) {
                 //choose whice texture to update
@@ -241,5 +239,6 @@ public class GLRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
     public SurfaceTexture getProcessSurfaceTexture() {
         return mTextureProcessed;
     }
+    public StitchObject getStitch() { return mStitch; }
 
 }

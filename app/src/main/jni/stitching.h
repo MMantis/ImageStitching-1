@@ -78,13 +78,15 @@ extern "C" {
 
 JNIEXPORT void JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativeAligning(JNIEnv*, jobject, jlong imgaddr,jlong glRotAddr,jlong retaddr);
 JNIEXPORT void JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativeAddStitch(JNIEnv*, jobject, jlong imgaddr,jlong rotaddr);
-JNIEXPORT int JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativeStitch(JNIEnv*, jobject,jlong retAddr,jlong areaAddr,jlong rotAddr,jlong refinedRotAddr);
+JNIEXPORT int JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativeStitch(JNIEnv*, jobject,jlong retAddr,jlong areaAddr,jlong rotAddr,jlong refinedRotAddr,jlong roiAddr,jlong k_rinvAddr);
 JNIEXPORT int JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativeKeyFrameSelection(JNIEnv *env, jobject,jfloatArray rotMat);
 
 
 void tracking(jlong imgaddr,jlong glrotaddr,jlong glprojaddr,jlong retaddr);
 int findNearest(int from,int to,std::vector<ImagePackage> images,Mat &inputR);
 void findDescriptor(Mat img,std::vector<KeyPoint> &keypoints ,Mat &descriptor);
+vector<Rect> findROI(float warped_image_scale, std::vector<ImagePackage> images);
+inline void vectorMatrixMultiply(float vec[],float matrix[], float *out );
 inline Point3f calc3DPosition(Point2f keyPoint,float multiply_aspect);
 inline int glhProjectf(float objx, float objy, float objz, float *modelview, float *projection, int *viewport, float *windowCoordinate);
 inline float calcDistance(float x1,float y1, float z1,float x2,float y2,float z2);
