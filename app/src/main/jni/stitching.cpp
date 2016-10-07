@@ -44,7 +44,6 @@
 //M*/
 #pragma ide diagnostic ignored "ArrayIssue"
 #define EXPERIMENT 0
-#define DEBUG
 #define MINIMIZE
 #include "stitching.h"
 
@@ -608,11 +607,12 @@ void doComposition(float warped_image_scale,vector<CameraParams> cameras,vector<
 			Mat K;
 			cameras[i].K().convertTo(K, CV_32F);
 			clock_t c_c1 = std::clock();
+
+			Rect r = warper->buildMaps(img.size(),K,cameras[i].R,xmap,ymap);
 #ifdef DEBUG
 			char map_file_name[50];
 			sprintf(map_file_name,"/sdcard/stitch/map%d.yml",i);
 			cv::FileStorage mapfs(map_file_name, cv::FileStorage::WRITE);
-			Rect r = warper->buildMaps(img.size(),K,cameras[i].R,xmap,ymap);
 			SphericalProjector projector;
 			projector.scale = warped_image_scale*compose_work_aspect;
 			projector.setCameraParams(K,cameras[i].R);
@@ -713,8 +713,6 @@ JNIEXPORT void JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativ
 	//Mat& frame  = *(Mat*)imgaddr; Mat full_img;
 	Mat& full_img = *(Mat*)imgaddr;
 	Mat& rot = *(Mat*)rotaddr;
-	transpose(full_img, full_img);
-    flip(full_img, full_img,0);
 	//GaussianBlur(frame, full_img, cv::Size(0, 0), 3);
     //addWeighted(frame, 1.5, full_img, -0.5, 0, full_img);
 	image_package.full_image = full_img;
@@ -912,7 +910,9 @@ JNIEXPORT jint JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativ
 
 	work_height = (((warped_image_scale) / cameras[0].aspect) * M_PI);//??? 1280
 
-//	findWarpForSeam(warped_image_scale,seam_scale,work_scale,images,cameras);
+#ifdef CPU_STITCH
+	findWarpForSeam(warped_image_scale,seam_scale,work_scale,images,cameras);
+#endif
 
 	//Create vector of var because need to call seam_finder
 	vector<Mat> masks_warped(num_images);
@@ -960,10 +960,11 @@ JNIEXPORT jint JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativ
 
 	clock_t c_m5 = clock();
 	clock_t c_m6 = clock();
-//	doComposition(warped_image_scale,cameras,images,nullptr,work_scale,compose_scale,blend_type,result,area);
-
+#ifdef CPU_STITCH
+	doComposition(warped_image_scale,cameras,images,nullptr,work_scale,compose_scale,blend_type,result,area);
+	imwrite("/sdcard/stitch/cpu_panorama.jpg",result);
 	__android_log_print(ANDROID_LOG_ERROR,"C++ Stitching","Composed %d Images",num_images);
-
+#endif
 	clock_t c_m7 = clock();
 	__android_log_print(ANDROID_LOG_INFO,"C++ Stitching,Timer","%lf [Match %lf,Optimize %lf,Warp %lf,Seam %lf,Stitch %lf]",((double)c_m7-c_m1)/CLOCKS_PER_SEC,
 						((double)c_m2-c_m1)/CLOCKS_PER_SEC,((double)c_m3-c_m2)/CLOCKS_PER_SEC,((double)c_m4-c_m3)/CLOCKS_PER_SEC,((double)c_m5-c_m4)/CLOCKS_PER_SEC,((double)c_m7-c_m6)/CLOCKS_PER_SEC);

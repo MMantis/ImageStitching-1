@@ -17,8 +17,6 @@ package com.kunato.imagestitching;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Matrix;
 import android.opengl.GLES31;
 import android.opengl.GLUtils;
 import android.util.Log;
@@ -29,8 +27,6 @@ import org.opencv.core.Mat;
 import org.opencv.highgui.Highgui;
 import org.opencv.imgproc.Imgproc;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
@@ -54,6 +50,7 @@ public class StitchObject {
             "#define M_PI 3.1415926535897932384626433832795\n" +
             "#define SCALE 1468.803406\n"+
             "precision highp float;\n" +
+            "precision highp int;\n" +
             "uniform int length;\n" +
             "uniform sampler2D sTexture[7];\n" +
             "uniform ivec2 size[7];\n" +
@@ -90,31 +87,31 @@ public class StitchObject {
             "   ivec2 pos = ivec2(gl_FragCoord.x,winSize.y - int(gl_FragCoord.y));\n" +
             "       ivec2 diff = pos + tl;\n" +
             "       vec3 map = mapBackward(vec3(diff.x,diff.y,1),SCALE,k_rinv[0]);\n" +
-            "       color = texelFetch(sTexture[0], ivec2(map.x,int(map.y)) ,0);\n" +
+            "       color = texelFetch(sTexture[0], ivec2(round(map.x),round(map.y)) ,0);\n" +
             "       if(int(map.x) < 0 && int(map.x) >= size[0].x && int(map.y) < 0 && int(map.y) >= size[0].y ){" +
             "           color.a = 0.0;" +
             "       }" +
-//            "color = vec4(0,1,1,1);" +
+
             "   }\n" +
             "   else if(ndx == 1){\n" +
             "   ivec2 pos = ivec2(gl_FragCoord.x,winSize.y - int(gl_FragCoord.y));\n" +
             "       ivec2 diff = pos + tl;\n" +
             "       vec3 map = mapBackward(vec3(diff.x,diff.y,1),SCALE,k_rinv[1]);" +
-            "       color = texelFetch(sTexture[1], ivec2(map.x,int(map.y)) ,0);\n" +
+            "       color = texelFetch(sTexture[1], ivec2(round(map.x),round(map.y)) ,0);\n" +
             "       if(int(map.x) < 0 && int(map.x) >= size[1].x && int(map.y) < 0 && int(map.y) >= size[1].y ){" +
             "           color.a = 0.0;" +
             "       }" +
-//            "color = vec4(1,1,0,1);" +
+
             "   }\n" +
             "   else if(ndx == 2){\n" +
-            "   ivec2 pos = ivec2(gl_FragCoord.x,winSize.y - int(gl_FragCoord.y));\n" +
+            "   ivec2 pos = ivec2(gl_FragCoord.x, winSize.y - int(gl_FragCoord.y));\n" +
             "       ivec2 diff = pos + tl;\n" +
             "       vec3 map = mapBackward(vec3(diff.x,diff.y,1),SCALE,k_rinv[2]);" +
-            "       color = texelFetch(sTexture[2], ivec2(map.x,int(map.y)) ,0);\n" +
+            "       color = texelFetch(sTexture[2], ivec2(round(map.x),round(map.y)) ,0);\n" +
             "       if(int(map.x) < 0 && int(map.x) >= size[2].x && int(map.y) < 0 && int(map.y) >= size[2].y ){" +
             "           color.a = 0.0;" +
             "       }" +
-//            "color = vec4(1,0,1,1);" +
+
             "   }\n" +
             "   else if(ndx == 3){\n" +
             "   ivec2 pos = ivec2(gl_FragCoord.x,gl_FragCoord.y);\n" +
@@ -158,7 +155,6 @@ public class StitchObject {
     private final FloatBuffer pTexCoord;
     private int mTLX;
     private int mTLY;
-    public boolean mRealRender = false;
     private final int mProgram;
     public final int NUMBER_OF_TEXTURE = 3;
     //Only one texture
@@ -181,7 +177,6 @@ public class StitchObject {
     private GLRenderer glRenderer;
     private int mWidth = 0;
     private int mHeight = 0;
-    public float[] mArea = {0,0,0,0};
     private boolean mUpdate = false;
     private Context context;
 
@@ -270,7 +265,7 @@ public class StitchObject {
     public void loadBitmap(int i){
         GLES31.glActiveTexture(GLES31.GL_TEXTURE0+i);
         GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, this.mTextures[i]);
-        GLES31.glTexParameterf(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_MIN_FILTER, GLES31.GL_NEAREST_MIPMAP_NEAREST);
+        GLES31.glTexParameterf(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_MIN_FILTER, GLES31.GL_NEAREST);
         GLES31.glTexParameterf(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_MAG_FILTER, GLES31.GL_NEAREST);
         GLES31.glTexParameterf(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_WRAP_S,GLES31.GL_CLAMP_TO_EDGE);
         GLES31.glTexParameterf(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_WRAP_T,GLES31.GL_CLAMP_TO_EDGE);
@@ -412,6 +407,12 @@ public class StitchObject {
 //        mScreenBuffer.rewind();
 //        byte pixelsBuffer[] = new byte[4*mHeight*mWidth];
 //        mScreenBuffer.get(pixelsBuffer);
+//        for(int i = 0 ; i < mHeight;i++){
+//            Log.d("Stitch GPU","Height ["+(pixelsBuffer[((4*mWidth*i) + 4*3) + 0] & 0xFF)+","+(pixelsBuffer[((4*mWidth*i) + 4*3) + 1] & 0xFF)+","+(pixelsBuffer[((4*mWidth*i) + 4*3) + 2] & 0xFF)+","+(pixelsBuffer[((4*mWidth*i) + 4*3) + 3] & 0xFF)+"]");
+//        }
+//        for(int i = 0 ; i < mWidth;i++){
+//            Log.d("Stitch GPU","Width ["+(pixelsBuffer[((4*mWidth*3) + 4*i) + 0] & 0xFF)+","+(pixelsBuffer[((4*mWidth*3) + 4*i) + 1] & 0xFF)+","+(pixelsBuffer[((4*mWidth*3) + 4*i) + 2] & 0xFF)+","+(pixelsBuffer[((4*mWidth*3) + 4*i) + 3] & 0xFF)+"]");
+//        }
 //        Mat mat = new Mat(mHeight, mWidth, CvType.CV_8UC4);
 //        mat.put(0, 0, pixelsBuffer);
 //        Mat m = new Mat();

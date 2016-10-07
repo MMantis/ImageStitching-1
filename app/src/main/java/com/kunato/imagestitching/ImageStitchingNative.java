@@ -38,10 +38,11 @@ public class ImageStitchingNative {
     public int addToPano(Mat imageMat, Mat rotMat,int mPictureSize){
         Log.d("Java Stitch","Current Picture Size : "+mPictureSize);
         //Load Image to GPU
+
         Mat rgba = new Mat(imageMat.cols(),imageMat.rows(),CvType.CV_8UC4);
+        Core.flip(imageMat.t(),imageMat,0);
         Imgproc.cvtColor(imageMat,rgba,Imgproc.COLOR_BGR2RGBA);
-        Core.flip(rgba.t(),rgba,0);
-        Bitmap iBitmap = Bitmap.createBitmap(imageMat.rows(),imageMat.cols(),Bitmap.Config.ARGB_8888);
+        Bitmap iBitmap = Bitmap.createBitmap(rgba.cols(),rgba.rows(),Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(rgba,iBitmap);
 
         Factory.getFactory(null).getGlRenderer().getStitch().bitmapToCPU(iBitmap,mPictureSize);
