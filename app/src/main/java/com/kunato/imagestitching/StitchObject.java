@@ -52,11 +52,11 @@ public class StitchObject {
             "precision highp float;\n" +
             "precision highp int;\n" +
             "uniform int length;\n" +
-            "uniform sampler2D sTexture[7];\n" +
-            "uniform ivec2 size[7];\n" +
-            "uniform ivec2 corner[7];\n" +
-            "uniform mat3 r_kinv[7];\n" +
-            "uniform mat3 k_rinv[7];\n" +
+            "uniform sampler2D sTexture[11];\n" +
+            "uniform ivec2 size[11];\n" +
+            "uniform ivec2 corner[11];\n" +
+            "uniform mat3 r_kinv[11];\n" +
+            "uniform mat3 k_rinv[11];\n" +
             "uniform ivec2 tl;\n" +
             "uniform ivec2 winSize;\n" +
             "in vec2 texCoord;\n" +
@@ -82,7 +82,6 @@ public class StitchObject {
             "}\n" +
             "vec4 getSampleFromArray(in int ndx){\n" +
             "   vec4 color;\n" +
-            "" +
             "   if(ndx == 0){\n" +
             "   ivec2 pos = ivec2(gl_FragCoord.x,winSize.y - int(gl_FragCoord.y));\n" +
             "       ivec2 diff = pos + tl;\n" +
@@ -91,7 +90,22 @@ public class StitchObject {
             "       if(int(map.x) < 0 && int(map.x) >= size[0].x && int(map.y) < 0 && int(map.y) >= size[0].y ){" +
             "           color.a = 0.0;" +
             "       }" +
-
+            "       else{" +
+            "           int x = int(map.x);" +
+            "           if(x > size[ndx].x - int(map.x)){" +
+            "               x = size[ndx].x - int(map.x);" +
+            "           }" +
+            "           int y = int(map.y);" +
+            "           if(y > size[ndx].y - int(map.y)){" +
+            "               y = size[ndx].y - int(map.y);" +
+            "           }" +
+            "           if(y > x){" +
+            "               color *= float(x)/float(size[ndx].x);" +
+            "           }" +
+            "           else{" +
+            "               color *= float(y)/float(size[ndx].y);" +
+            "           }" +
+            "       }" +
             "   }\n" +
             "   else if(ndx == 1){\n" +
             "   ivec2 pos = ivec2(gl_FragCoord.x,winSize.y - int(gl_FragCoord.y));\n" +
@@ -101,7 +115,22 @@ public class StitchObject {
             "       if(int(map.x) < 0 && int(map.x) >= size[1].x && int(map.y) < 0 && int(map.y) >= size[1].y ){" +
             "           color.a = 0.0;" +
             "       }" +
-
+            "       else{" +
+            "           int x = int(map.x);" +
+            "           if(x > size[ndx].x - int(map.x)){" +
+            "               x = size[ndx].x - int(map.x);" +
+            "           }" +
+            "           int y = int(map.y);" +
+            "           if(y > size[ndx].y - int(map.y)){" +
+            "               y = size[ndx].y - int(map.y);" +
+            "           }" +
+            "           if(y > x){" +
+            "               color *= float(x)/float(size[ndx].x);" +
+            "           }" +
+            "           else{" +
+            "               color *= float(y)/float(size[ndx].y);" +
+            "           }" +
+            "       }" +
             "   }\n" +
             "   else if(ndx == 2){\n" +
             "   ivec2 pos = ivec2(gl_FragCoord.x, winSize.y - int(gl_FragCoord.y));\n" +
@@ -111,42 +140,222 @@ public class StitchObject {
             "       if(int(map.x) < 0 && int(map.x) >= size[2].x && int(map.y) < 0 && int(map.y) >= size[2].y ){" +
             "           color.a = 0.0;" +
             "       }" +
-
+            "       else{" +
+            "           int x = int(map.x);" +
+            "           if(x > size[ndx].x - int(map.x)){" +
+            "               x = size[ndx].x - int(map.x);" +
+            "           }" +
+            "           int y = int(map.y);" +
+            "           if(y > size[ndx].y - int(map.y)){" +
+            "               y = size[ndx].y - int(map.y);" +
+            "           }" +
+            "           if(y > x){" +
+            "               color *= float(x)/float(size[ndx].x);" +
+            "           }" +
+            "           else{" +
+            "               color *= float(y)/float(size[ndx].y);" +
+            "           }" +
+            "       }" +
             "   }\n" +
             "   else if(ndx == 3){\n" +
-            "   ivec2 pos = ivec2(gl_FragCoord.x,gl_FragCoord.y);\n" +
-            "       ivec2 diff = pos - corner[3];\n" +
-            "       color = texelFetch(sTexture[3], ivec2(diff.x,size[3].y - diff.y) ,0);\n" +
+            "   ivec2 pos = ivec2(gl_FragCoord.x, winSize.y - int(gl_FragCoord.y));\n" +
+            "       ivec2 diff = pos + tl;\n" +
+            "       vec3 map = mapBackward(vec3(diff.x,diff.y,1),SCALE,k_rinv[3]);" +
+            "       color = texelFetch(sTexture[3], ivec2(round(map.x),round(map.y)) ,0);\n" +
+            "       if(int(map.x) < 0 && int(map.x) >= size[3].x && int(map.y) < 0 && int(map.y) >= size[3].y ){" +
+            "           color.a = 0.0;" +
+            "       }" +
+            "       else{" +
+            "           int x = int(map.x);" +
+            "           if(x > size[ndx].x - int(map.x)){" +
+            "               x = size[ndx].x - int(map.x);" +
+            "           }" +
+            "           int y = int(map.y);" +
+            "           if(y > size[ndx].y - int(map.y)){" +
+            "               y = size[ndx].y - int(map.y);" +
+            "           }" +
+            "           if(y > x){" +
+            "               color *= float(x)/float(size[ndx].x);" +
+            "           }" +
+            "           else{" +
+            "               color *= float(y)/float(size[ndx].y);" +
+            "           }" +
+            "       }" +
             "   }\n" +
             "   else if(ndx == 4){\n" +
-            "   ivec2 pos = ivec2(gl_FragCoord.x,gl_FragCoord.y);\n" +
-            "       ivec2 diff = pos - corner[4];\n" +
-            "       color = texelFetch(sTexture[4], ivec2(diff.x,size[4].y - diff.y) ,0);\n" +
+            "   ivec2 pos = ivec2(gl_FragCoord.x, winSize.y - int(gl_FragCoord.y));\n" +
+            "       ivec2 diff = pos + tl;\n" +
+            "       vec3 map = mapBackward(vec3(diff.x,diff.y,1),SCALE,k_rinv[4]);" +
+            "       color = texelFetch(sTexture[4], ivec2(round(map.x),round(map.y)) ,0);\n" +
+            "       if(int(map.x) < 0 && int(map.x) >= size[4].x && int(map.y) < 0 && int(map.y) >= size[4].y ){" +
+            "           color.a = 0.0;" +
+            "       }" +
+            "       else{" +
+            "           int x = int(map.x);" +
+            "           if(x > size[ndx].x - int(map.x)){" +
+            "               x = size[ndx].x - int(map.x);" +
+            "           }" +
+            "           int y = int(map.y);" +
+            "           if(y > size[ndx].y - int(map.y)){" +
+            "               y = size[ndx].y - int(map.y);" +
+            "           }" +
+            "           if(y > x){" +
+            "               color *= float(x)/float(size[ndx].x);" +
+            "           }" +
+            "           else{" +
+            "               color *= float(y)/float(size[ndx].y);" +
+            "           }" +
+            "       }" +
             "   }\n" +
             "   else if(ndx == 5){\n" +
-            "   ivec2 pos = ivec2(gl_FragCoord.x,gl_FragCoord.y);\n" +
-            "       ivec2 diff = pos - corner[5];\n" +
-            "       color = texelFetch(sTexture[5], ivec2(diff.x,size[5].y - diff.y) ,0);\n" +
+            "   ivec2 pos = ivec2(gl_FragCoord.x, winSize.y - int(gl_FragCoord.y));\n" +
+            "       ivec2 diff = pos + tl;\n" +
+            "       vec3 map = mapBackward(vec3(diff.x,diff.y,1),SCALE,k_rinv[5]);" +
+            "       color = texelFetch(sTexture[5], ivec2(round(map.x),round(map.y)) ,0);\n" +
+            "       if(int(map.x) < 0 && int(map.x) >= size[5].x && int(map.y) < 0 && int(map.y) >= size[5].y ){" +
+            "           color.a = 0.0;" +
+            "       }" +
+            "       else{" +
+            "           int x = int(map.x);" +
+            "           if(x > size[ndx].x - int(map.x)){" +
+            "               x = size[ndx].x - int(map.x);" +
+            "           }" +
+            "           int y = int(map.y);" +
+            "           if(y > size[ndx].y - int(map.y)){" +
+            "               y = size[ndx].y - int(map.y);" +
+            "           }" +
+            "           if(y > x){" +
+            "               color *= float(x)/float(size[ndx].x);" +
+            "           }" +
+            "           else{" +
+            "               color *= float(y)/float(size[ndx].y);" +
+            "           }" +
+            "       }" +
             "   }\n" +
             "   else if(ndx == 6){\n" +
-            "   ivec2 pos = ivec2(gl_FragCoord.x,gl_FragCoord.y);\n" +
-            "       ivec2 diff = pos - corner[6];\n" +
-            "       color = texelFetch(sTexture[6], ivec2(diff.x,size[6].y - diff.y) ,0);\n" +
+            "   ivec2 pos = ivec2(gl_FragCoord.x, winSize.y - int(gl_FragCoord.y));\n" +
+            "       ivec2 diff = pos + tl;\n" +
+            "       vec3 map = mapBackward(vec3(diff.x,diff.y,1),SCALE,k_rinv[6]);" +
+            "       color = texelFetch(sTexture[6], ivec2(round(map.x),round(map.y)) ,0);\n" +
+            "       if(int(map.x) < 0 && int(map.x) >= size[6].x && int(map.y) < 0 && int(map.y) >= size[6].y ){" +
+            "           color.a = 0.0;" +
+            "       }" +
+            "   }\n" +
+            "   else if(ndx == 7){\n" +
+            "   ivec2 pos = ivec2(gl_FragCoord.x, winSize.y - int(gl_FragCoord.y));\n" +
+            "       ivec2 diff = pos + tl;\n" +
+            "       vec3 map = mapBackward(vec3(diff.x,diff.y,1),SCALE,k_rinv[7]);" +
+            "       color = texelFetch(sTexture[7], ivec2(round(map.x),round(map.y)) ,0);\n" +
+            "       if(int(map.x) < 0 && int(map.x) >= size[7].x && int(map.y) < 0 && int(map.y) >= size[7].y ){" +
+            "           color.a = 0.0;" +
+            "       }" +
+            "       else{" +
+            "           int x = int(map.x);" +
+            "           if(x > size[ndx].x - int(map.x)){" +
+            "               x = size[ndx].x - int(map.x);" +
+            "           }" +
+            "           int y = int(map.y);" +
+            "           if(y > size[ndx].y - int(map.y)){" +
+            "               y = size[ndx].y - int(map.y);" +
+            "           }" +
+            "           if(y > x){" +
+            "               color *= float(x)/float(size[ndx].x);" +
+            "           }" +
+            "           else{" +
+            "               color *= float(y)/float(size[ndx].y);" +
+            "           }" +
+            "       }" +
+            "   }\n" +
+            "   else if(ndx == 8){\n" +
+            "   ivec2 pos = ivec2(gl_FragCoord.x, winSize.y - int(gl_FragCoord.y));\n" +
+            "       ivec2 diff = pos + tl;\n" +
+            "       vec3 map = mapBackward(vec3(diff.x,diff.y,1),SCALE,k_rinv[8]);" +
+            "       color = texelFetch(sTexture[8], ivec2(round(map.x),round(map.y)) ,0);\n" +
+            "       if(int(map.x) < 0 && int(map.x) >= size[8].x && int(map.y) < 0 && int(map.y) >= size[8].y ){" +
+            "           color.a = 0.0;" +
+            "       }" +
+            "       else{" +
+            "           int x = int(map.x);" +
+            "           if(x > size[ndx].x - int(map.x)){" +
+            "               x = size[ndx].x - int(map.x);" +
+            "           }" +
+            "           int y = int(map.y);" +
+            "           if(y > size[ndx].y - int(map.y)){" +
+            "               y = size[ndx].y - int(map.y);" +
+            "           }" +
+            "           if(y > x){" +
+            "               color *= float(x)/float(size[ndx].x);" +
+            "           }" +
+            "           else{" +
+            "               color *= float(y)/float(size[ndx].y);" +
+            "           }" +
+            "       }" +
+            "   }\n" +
+            "   else if(ndx == 9){\n" +
+            "   ivec2 pos = ivec2(gl_FragCoord.x, winSize.y - int(gl_FragCoord.y));\n" +
+            "       ivec2 diff = pos + tl;\n" +
+            "       vec3 map = mapBackward(vec3(diff.x,diff.y,1),SCALE,k_rinv[9]);" +
+            "       color = texelFetch(sTexture[9], ivec2(round(map.x),round(map.y)) ,0);\n" +
+            "       if(int(map.x) < 0 && int(map.x) >= size[9].x && int(map.y) < 0 && int(map.y) >= size[9].y ){" +
+            "           color.a = 0.0;" +
+            "       }" +
+            "       else{" +
+            "           int x = int(map.x);" +
+            "           if(x > size[ndx].x - int(map.x)){" +
+            "               x = size[ndx].x - int(map.x);" +
+            "           }" +
+            "           int y = int(map.y);" +
+            "           if(y > size[ndx].y - int(map.y)){" +
+            "               y = size[ndx].y - int(map.y);" +
+            "           }" +
+            "           if(y > x){" +
+            "               color *= float(x)/float(size[ndx].x);" +
+            "           }" +
+            "           else{" +
+            "               color *= float(y)/float(size[ndx].y);" +
+            "           }" +
+            "       }" +
+            "   }\n" +
+            "   else if(ndx == 10){\n" +
+            "   ivec2 pos = ivec2(gl_FragCoord.x, winSize.y - int(gl_FragCoord.y));\n" +
+            "       ivec2 diff = pos + tl;\n" +
+            "       vec3 map = mapBackward(vec3(diff.x,diff.y,1),SCALE,k_rinv[10]);" +
+            "       color = texelFetch(sTexture[10], ivec2(round(map.x),round(map.y)) ,0);\n" +
+            "       if(int(map.x) < 0 && int(map.x) >= size[10].x && int(map.y) < 0 && int(map.y) >= size[10].y ){" +
+            "           color.a = 0.0;" +
+            "       }" +
+            "       else{" +
+            "           int x = int(map.x);" +
+            "           if(x > size[ndx].x - int(map.x)){" +
+            "               x = size[ndx].x - int(map.x);" +
+            "           }" +
+            "           int y = int(map.y);" +
+            "           if(y > size[ndx].y - int(map.y)){" +
+            "               y = size[ndx].y - int(map.y);" +
+            "           }" +
+            "           if(y > x){" +
+            "               color *= float(x)/float(size[ndx].x);" +
+            "           }" +
+            "           else{" +
+            "               color *= float(y)/float(size[ndx].y);" +
+            "           }" +
+            "       }" +
             "   }\n" +
             "   return color;\n"+
             "}\n" +
             "void main() {\n" +
             "   int idx;" +
             "   ivec2 pos = ivec2(gl_FragCoord.x,winSize.y - int(gl_FragCoord.y));" +
+            "   vec4 color = vec4(0,0,0,0);" +
             "   for(int i = length-1 ; i >= 0 ;i--){" +
             "       if(corner[i].x < pos.x + tl.x && corner[i].x + size[i].x > pos.x + tl.x && corner[i].y < pos.y + tl.y && corner[i].y + size[i].y > pos.y + tl.y){" +
             "           idx = i;\n" +
-            "           vec4 color = getSampleFromArray(idx);\n" +
-            "           if(color.a != 0.0){" +
-            "               fragmentColor = color;" +
-            "               break;" +
-            "           }" +
+            "           color += getSampleFromArray(idx);\n" +
             "       }" +
+            "   }" +
+            "   if(color.a > 0.0){" +
+            "       color/=color.w;" +
+            "       fragmentColor = color;" +
             "   }" +
             "   \n" +
             "   \n" +
@@ -156,7 +365,7 @@ public class StitchObject {
     private int mTLX;
     private int mTLY;
     private final int mProgram;
-    public final int NUMBER_OF_TEXTURE = 3;
+    public final int NUMBER_OF_TEXTURE = 11;
     //Only one texture
     private int[] mTextures = new int[NUMBER_OF_TEXTURE];
     private int[] corners = new int[NUMBER_OF_TEXTURE*2];
@@ -166,7 +375,7 @@ public class StitchObject {
     private int mFBOID;
     private int mFBOTex;
     private static final float SCALE = 1468.803406f;
-    private Bitmap[] mCPUBitmap = new Bitmap[3];
+    private Bitmap[] mCPUBitmap = new Bitmap[NUMBER_OF_TEXTURE];
     int[] cof = new int[NUMBER_OF_TEXTURE*2];
     int[] sof = new int[NUMBER_OF_TEXTURE*2];
     float[] k_rinvData = new float[]{ 1.46880334e+03f, 0.f, 5.56620422e+02f, 0.f, 1.46880334e+03f,  9.87914978e+02f, 0.f, 0.f, 1.f,
@@ -195,7 +404,7 @@ public class StitchObject {
         pTexCoord.position(0);
         this.context = context;
 
-        GLES31.glGenTextures(3, this.mTextures, 0);
+        GLES31.glGenTextures(NUMBER_OF_TEXTURE, this.mTextures, 0);
 
 
     }
@@ -379,6 +588,7 @@ public class StitchObject {
         GLES31.glEnableVertexAttribArray(tch);
         //START OF RENDERING
         int[] texArray = new int[mCurrentSize];
+        Log.d("GPU Stitch","mCurrentSize : "+mCurrentSize);
         for(int i = 0 ; i <mCurrentSize;i++){
             GLES31.glActiveTexture(GLES31.GL_TEXTURE0+i);
             GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, mTextures[i]);
@@ -400,25 +610,19 @@ public class StitchObject {
         Log.d("Stitch GPU","TimeSpend : "+(end-start2)*0.001+ " : "+(start2-start)*0.001 + " ; "+count);
         //END OF RENDERING
 
-//        mScreenBuffer = ByteBuffer.allocateDirect(mHeight * mWidth * 4);
-//        mScreenBuffer.order(ByteOrder.nativeOrder());
-//        GLES31.glReadPixels(0, 0, mWidth, mHeight, GLES31.GL_RGBA, GLES31.GL_UNSIGNED_BYTE, mScreenBuffer);
-//
-//        mScreenBuffer.rewind();
-//        byte pixelsBuffer[] = new byte[4*mHeight*mWidth];
-//        mScreenBuffer.get(pixelsBuffer);
-//        for(int i = 0 ; i < mHeight;i++){
-//            Log.d("Stitch GPU","Height ["+(pixelsBuffer[((4*mWidth*i) + 4*3) + 0] & 0xFF)+","+(pixelsBuffer[((4*mWidth*i) + 4*3) + 1] & 0xFF)+","+(pixelsBuffer[((4*mWidth*i) + 4*3) + 2] & 0xFF)+","+(pixelsBuffer[((4*mWidth*i) + 4*3) + 3] & 0xFF)+"]");
-//        }
-//        for(int i = 0 ; i < mWidth;i++){
-//            Log.d("Stitch GPU","Width ["+(pixelsBuffer[((4*mWidth*3) + 4*i) + 0] & 0xFF)+","+(pixelsBuffer[((4*mWidth*3) + 4*i) + 1] & 0xFF)+","+(pixelsBuffer[((4*mWidth*3) + 4*i) + 2] & 0xFF)+","+(pixelsBuffer[((4*mWidth*3) + 4*i) + 3] & 0xFF)+"]");
-//        }
-//        Mat mat = new Mat(mHeight, mWidth, CvType.CV_8UC4);
-//        mat.put(0, 0, pixelsBuffer);
-//        Mat m = new Mat();
-//        Imgproc.cvtColor(mat, m, Imgproc.COLOR_RGBA2BGR);
-//        Core.flip(m, mat, 0);
-//        Highgui.imwrite("/sdcard/stitch/stitchfbo.jpg",mat);
+        mScreenBuffer = ByteBuffer.allocateDirect(mHeight * mWidth * 4);
+        mScreenBuffer.order(ByteOrder.nativeOrder());
+        GLES31.glReadPixels(0, 0, mWidth, mHeight, GLES31.GL_RGBA, GLES31.GL_UNSIGNED_BYTE, mScreenBuffer);
+
+        mScreenBuffer.rewind();
+        byte pixelsBuffer[] = new byte[4*mHeight*mWidth];
+        mScreenBuffer.get(pixelsBuffer);
+        Mat mat = new Mat(mHeight, mWidth, CvType.CV_8UC4);
+        mat.put(0, 0, pixelsBuffer);
+        Mat m = new Mat();
+        Imgproc.cvtColor(mat, m, Imgproc.COLOR_RGBA2BGR);
+        Core.flip(m, mat, 0);
+        Highgui.imwrite("/sdcard/stitch/stitchfbo.jpg",mat);
 
         //END OF IMWRITE
         GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, 0);
