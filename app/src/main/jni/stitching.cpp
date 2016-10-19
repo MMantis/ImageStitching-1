@@ -76,6 +76,7 @@ void findDescriptor(Mat img,std::vector<KeyPoint> &keypoints ,Mat &descriptor){
     sprintf(file_str, "/sdcard/stitch/keypoint%d.jpg", images.size());
     imwrite(file_str,out);
 #endif
+
 }
 
 inline float calcDistance(float x1,float y1,float z1,float x2,float y2, float z2){

@@ -59,8 +59,9 @@ public class CanvasObject {
                     "void main() {\n" +
                     "vec3 coord = vec3(texCoord.x,texCoord.y,1.0);" +
                     "vec4 color = texture2D(sTexture,convertToTexCoord(inverse(homography)*coord));\n" +
-                    "//float grayScale = dot(color.rgb, vec3(0.299, 0.587, 0.114));\n" +
-                    "gl_FragColor = color;\n" +
+                    "float grayScale = dot(color.rgb, vec3(0.299, 0.587, 0.114));\n" +
+                    "gl_FragColor = vec4(grayScale,grayScale,grayScale,1.0);\n" +
+                    "//gl_FragColor = color;\n" +
                     "}";
     private final String fss_int =
             "precision mediump float;\n" +
