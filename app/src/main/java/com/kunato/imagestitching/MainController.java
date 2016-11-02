@@ -86,8 +86,10 @@ public class MainController extends GLSurfaceView {
     public static long MAX_SHUTTER_SPEED = 5000000;
     //Nexus5x = 1080,1920
     //Note10.1 = 1080,1440
-//    private Size mSize = new Size(1080,1440);
-    private Size mSize = new Size(1920,1080);
+//    private Size mReadSize = new Size(1080,1440);
+//    private Size mReadSize = new Size(1920,1080);
+    private Size mReadSize = new Size(2688,1512);
+    private Size mPreviewSize = new Size(1920,1080);
     private int mConvertType = Imgproc.COLOR_YUV2BGR_I420;
 //    private int mConvertType = Imgproc.COLOR_YUV2BGR_NV12;
     //Using in OnImageAvailableListener
@@ -407,14 +409,15 @@ public class MainController extends GLSurfaceView {
                 if (characteristics.get(LENS_FACING) == LENS_FACING_FRONT) continue;
                 mCharacteristics = characteristics;
                 //Note10.1
-//                mImageReader = ImageReader.newInstance(mSize.getWidth(), mSize.getHeight(), ImageFormat.YV12, 1);
+//                mImageReader = ImageReader.newInstance(mReadSize.getWidth(), mReadSize.getHeight(), ImageFormat.YV12, 1);
                 //Nexus5x
-                mImageReader = ImageReader.newInstance(mSize.getWidth(), mSize.getHeight(), ImageFormat.YUV_420_888,1);
+                mImageReader = ImageReader.newInstance(mReadSize.getWidth(), mReadSize.getHeight(), ImageFormat.YUV_420_888,1);
 
                 mImageReader.setOnImageAvailableListener(mOnImageAvailableListener, mBackgroundHandler);
 
                 StreamConfigurationMap configs = characteristics.get(
                         CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+                Log.d("CameraParam","Support OutputSizes"+Arrays.toString(configs.getOutputSizes(ImageReader.class)));
                 Log.d("CameraParam","CaptureResultKey :"+Arrays.toString(characteristics.getAvailableCaptureRequestKeys().toArray()));
 
                 Log.d("CameraParam","Support : "+configs.isOutputSupportedFor(ImageReader.class)+","+configs.isOutputSupportedFor(mImageReader.getSurface()));
@@ -498,7 +501,7 @@ public class MainController extends GLSurfaceView {
                     e.printStackTrace();
                 }
             }
-            glProcessTexture.setDefaultBufferSize(mSize.getWidth(),mSize.getHeight());
+            glProcessTexture.setDefaultBufferSize(mPreviewSize.getWidth(),mPreviewSize.getHeight());
             Surface mGLProcessSurface = new Surface(glProcessTexture);
 
             List<Surface> surfaceList = new ArrayList<>();
@@ -538,7 +541,7 @@ public class MainController extends GLSurfaceView {
                             Toast.makeText(getActivity(), "Failed", Toast.LENGTH_SHORT).show();
                         }
                     }, mBackgroundHandler);
-            mPreviewRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+            mPreviewRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_ZERO_SHUTTER_LAG);
             for(int i = 0 ; i < surfaceList.size() ;i++){
                 mPreviewRequestBuilder.addTarget(surfaceList.get(i));
             }
@@ -633,9 +636,9 @@ public class MainController extends GLSurfaceView {
     private class ImageStitchingTask extends AsyncTask<Mat, Integer, Boolean> {
         protected Boolean doInBackground(Mat... objects) {
             Log.d("AsyncTask","doInBackground");
-            Mat yv12 = new Mat(mSize.getHeight()*3/2, mSize.getWidth(), CvType.CV_8UC1);
+            Mat yv12 = new Mat(mReadSize.getHeight()*3/2, mReadSize.getWidth(), CvType.CV_8UC1);
             yv12.put(0, 0, mFrameByte);
-            Mat rgb = new Mat(mSize.getWidth(),mSize.getHeight(),CvType.CV_8UC3);
+            Mat rgb = new Mat(mReadSize.getWidth(), mReadSize.getHeight(),CvType.CV_8UC3);
             Imgproc.cvtColor(yv12, rgb, mConvertType,3);
             Thread uiThread = new Thread() {
 
@@ -690,9 +693,9 @@ public class MainController extends GLSurfaceView {
     private class ImageAligningTask extends AsyncTask<Mat, Integer, Boolean> {
         protected Boolean doInBackground(Mat... objects) {
             Log.d("AsyncTask","doInBackground");
-            Mat yv12 = new Mat(mSize.getHeight()*3/2, mSize.getWidth(), CvType.CV_8UC1);
+            Mat yv12 = new Mat(mReadSize.getHeight()*3/2, mReadSize.getWidth(), CvType.CV_8UC1);
             yv12.put(0, 0, mFrameByte);
-            Mat rgb = new Mat(mSize.getWidth(),mSize.getHeight(),CvType.CV_8UC3);
+            Mat rgb = new Mat(mReadSize.getWidth(), mReadSize.getHeight(),CvType.CV_8UC3);
             Imgproc.cvtColor(yv12, rgb, mConvertType,3);
             float[] rotMat = new float[16];
             SensorManager.getRotationMatrixFromVector(rotMat, mQuaternion);

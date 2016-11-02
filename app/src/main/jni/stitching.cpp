@@ -428,10 +428,7 @@ Rect findResultROI(vector<Rect> rects){
 		br.y = std::max(br.y, rects[i].y + rects[i].height);
 	}
 	Rect r(tl,br);
-	r.x -= 10;
-	r.y -= 10;
-	r.width += 20;
-	r.height += 20;
+	r.y += 20;
 	return r;
 }
 vector<int> findOverlap(vector<Point2i> p,vector<Size> size){

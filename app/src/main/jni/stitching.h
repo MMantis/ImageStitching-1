@@ -62,7 +62,7 @@ float focal_divider = 3.45;
 //Note10.1
 //float camera_focal_x=1425.559961560,camera_focal_y=1425.559961560,camera_ppx=745.027494,camera_ppy=436.7257419;
 //Nexus5x
-float camera_focal_x=1468.8033741635331,camera_focal_y=1468.8033741635331,camera_ppx=556.62040323411281,camera_ppy=987.91495706781313;
+float camera_focal_x=1468.8033741635331*1.4,camera_focal_y=1468.8033741635331*1.4,camera_ppx=556.62040323411281*1.4,camera_ppy=987.91495706781313*1.4;
 int work_width = 0;
 int work_height = 0;
 vector<ImagePackage> images;
