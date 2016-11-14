@@ -12,10 +12,10 @@
 #include <iterator>
 #include <android/log.h>
 #include "opencv2/calib3d/calib3d.hpp"
-#include "/usr/local/include/ceres/ceres.h"
-#include "/usr/local/include/ceres/rotation.h"
-#include "/usr/local/include/eigen3/Eigen/Dense"
-#include "/usr/local/include/eigen3/Eigen/Geometry"
+#include "ceres/ceres.h"
+#include "ceres/rotation.h"
+#include "Eigen/Dense"
+#include "Eigen/Geometry"
 #include "cmath"
 #include "opencv2/stitching/detail/matchers.hpp"
 #include "opencv2/stitching/detail/motion_estimators.hpp"
