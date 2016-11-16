@@ -5,12 +5,13 @@
  *      Author: kunato
  */
 #include "BundleCeres.h"
-
+vector<int> point_sizes;
 using namespace cv;
 using namespace std;
 
 typedef Eigen::Matrix<double,3,3,Eigen::ColMajor> Matrix3d;
 typedef Eigen::Matrix<double,3,1,Eigen::ColMajor> Vector3d;
+
 struct ReprojectionErrorData
 {
     vector<Point2f> points;
@@ -116,7 +117,16 @@ struct BaseErrorOneVector {
         ceres::RotationMatrixToQuaternion(diff_array,diff_quat);
         double angle = 2 * asin(diff_quat[3]);
         __android_log_print(ANDROID_LOG_DEBUG,"Ceres Minimize","Diff Angle [%lf]",angle*180.0/M_PI);
-        residuals[0] = 1000000000000000000000 / num_point * abs(angle);
+
+        double multiplier = 100 - (100 * (log(num_point)/log(30)));
+        if(multiplier > 0){
+            multiplier = multiplier;
+        }
+        else{
+            multiplier = 0;
+        }
+        //__android_log_print(ANDROID_LOG_DEBUG,"Ceres Minimize","Point Size : %d : %lf",num_point,multiplier);
+        residuals[0] = multiplier * abs(angle);
 //        residuals[0] = 0;
 
         __android_log_print(ANDROID_LOG_DEBUG,"Ceres Minimize","Bases Residuals : %lf",residuals[0]);
@@ -350,7 +360,6 @@ int minimizeRotation(vector<Point2f> src,vector<Point2f> dst,vector<CameraParams
         p2[i*3+1] = rpSet[i].points[1].y;
         p2[i*3+2] = 1;
     }
-    __android_log_print(ANDROID_LOG_DEBUG,"Ceres","Point Size : %d",rpSet.size());
     for(int i = rpSet.size() -1 ; i >= 0  ; i--){
         double *p1_pointer = (p1+(i*3));
         double *p2_pointer = (p2+(i*3));
@@ -381,5 +390,14 @@ int minimizeRotation(vector<Point2f> src,vector<Point2f> dst,vector<CameraParams
         Rodrigues(rvec,R);
         R.convertTo(cameras[i].R,CV_32F);
     }
+    point_sizes.push_back(rpSet.size());
+    ofstream myfile;
+    myfile.open ("/sdcard/stitch/point.txt");
+    for(int i = 0 ; i < point_sizes.size() ; i++){
+
+        myfile << i<<" : "<<point_sizes[i] <<"\n";
+
+    }
+    myfile.close();
     return iterationCount;
 }

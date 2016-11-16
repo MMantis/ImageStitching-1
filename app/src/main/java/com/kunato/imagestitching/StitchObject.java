@@ -610,19 +610,19 @@ public class StitchObject {
         Log.d("Stitch GPU","TimeSpend : "+(end-start2)*0.001+ " : "+(start2-start)*0.001 + " ; "+count);
         //END OF RENDERING
 
-//        mScreenBuffer = ByteBuffer.allocateDirect(mHeight * mWidth * 4);
-//        mScreenBuffer.order(ByteOrder.nativeOrder());
-//        GLES31.glReadPixels(0, 0, mWidth, mHeight, GLES31.GL_RGBA, GLES31.GL_UNSIGNED_BYTE, mScreenBuffer);
-//
-//        mScreenBuffer.rewind();
-//        byte pixelsBuffer[] = new byte[4*mHeight*mWidth];
-//        mScreenBuffer.get(pixelsBuffer);
-//        Mat mat = new Mat(mHeight, mWidth, CvType.CV_8UC4);
-//        mat.put(0, 0, pixelsBuffer);
-//        Mat m = new Mat();
-//        Imgproc.cvtColor(mat, m, Imgproc.COLOR_RGBA2BGR);
-//        Core.flip(m, mat, 0);
-//        Highgui.imwrite("/sdcard/stitch/stitchfbo.jpg",mat);
+        mScreenBuffer = ByteBuffer.allocateDirect(mHeight * mWidth * 4);
+        mScreenBuffer.order(ByteOrder.nativeOrder());
+        GLES31.glReadPixels(0, 0, mWidth, mHeight, GLES31.GL_RGBA, GLES31.GL_UNSIGNED_BYTE, mScreenBuffer);
+
+        mScreenBuffer.rewind();
+        byte pixelsBuffer[] = new byte[4*mHeight*mWidth];
+        mScreenBuffer.get(pixelsBuffer);
+        Mat mat = new Mat(mHeight, mWidth, CvType.CV_8UC4);
+        mat.put(0, 0, pixelsBuffer);
+        Mat m = new Mat();
+        Imgproc.cvtColor(mat, m, Imgproc.COLOR_RGBA2BGR);
+        Core.flip(m, mat, 0);
+        Highgui.imwrite("/sdcard/stitch/stitchfbo.jpg",mat);
 
         //END OF IMWRITE
         GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, 0);

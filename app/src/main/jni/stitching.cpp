@@ -28,7 +28,7 @@
 //
 //   * The name of the copyright holders may not be used to endorse or promote products
 //     derived from this software without specific prior written permission.
-//
+//l
 // This software is provided by the copyright holders and contributors "as is" and
 // any express or implied warranties, including, but not limited to, the implied
 // warranties of merchantability and fitness for a particular purpose are disclaimed.
@@ -815,14 +815,14 @@ JNIEXPORT jint JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativ
 		if(pairwise_matches[i].src_img_idx == nearest_image && pairwise_matches[i].dst_img_idx == images.size()-1){
 			//__android_log_print(ANDROID_LOG_INFO,"C++ Stitching","Nearest Pair %d %d %d",pairwise_matches[i].src_img_idx
 			//		,pairwise_matches[i].dst_img_idx,pairwise_matches[i].matches.size());
-			if(pairwise_matches[i].matches.size() < 15){
+			if(pairwise_matches[i].inliers_mask.size() < 1){
 				//return
 				__android_log_print(ANDROID_LOG_WARN,"C++ Stitching","Stitch Rejected < 15 matches point..");
 				images.pop_back();
 				return 0;
 			}
 			else {
-				for (int j = 0; j < pairwise_matches[i].matches.size(); j++) {
+				for (int j = 0; j < pairwise_matches[i].inliers_mask.size(); j++) {
 					if (pairwise_matches[i].inliers_mask[j]) {
 						src.push_back(
 						    features[nearest_image].keypoints[pairwise_matches[i].matches[j].queryIdx].pt);
