@@ -58,16 +58,23 @@ void findDescriptor(Mat img,std::vector<KeyPoint> &keypoints ,Mat &descriptor){
 //		detector->set("nOctaves", 3);
 //		detector->set("nOctaveLayers", 4);
 		detector_setup = 0;
-		detector->set("nFeatures", 100);
+		detector->set("nFeatures", 200);
 	}
+//	ORB orb;
+//	SurfFeatureDetector surf;
+//	FREAK extractor;
+
 	Mat gray_img;
     Mat mask;
     mask.create(img.size(), CV_8U);
     mask.setTo(Scalar::all(255));
     int x_margin = img.rows/3;
     int y_margin = img.cols/3;
-    cvtColor(img,gray_img,CV_BGR2GRAY);
+    cvtColor(img, gray_img, CV_BGR2GRAY);
 	(*detector)(gray_img , mask, keypoints, descriptor, false);
+//	surf.detect(gray_img, keypoints,mask);
+//	orb.detect(gray_img, keypoints,mask);
+//	extractor.compute(gray_img,keypoints,descriptor);
 	descriptor = descriptor.reshape(1, static_cast<int>(keypoints.size()));
     Mat out;
 #ifdef DEBUG
@@ -753,7 +760,7 @@ JNIEXPORT void JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativ
 
 
 JNIEXPORT jint JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativeStitch(JNIEnv*, jobject,jlong retAddr,jlong areaAddr,jlong rotAddr,jlong refinedRotAddr,jlong roiAddr,jlong k_rinvAddr){
-
+	cv::FileStorage rfs("/sdcard/stitch/rotation.yml", cv::FileStorage::WRITE);
 	__android_log_print(ANDROID_LOG_INFO,"C++ Stitching","Start");
 	Mat& result = *(Mat*)retAddr;
 	Mat& retRot = *(Mat*)rotAddr;
@@ -806,7 +813,6 @@ JNIEXPORT jint JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativ
 
 
 	//minimize all pair
-//	minimizeRotation(features,pairwise_matches,cameras);
 	vector<Point2f> src;
 	vector<Point2f> dst;
 
@@ -815,7 +821,7 @@ JNIEXPORT jint JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativ
 		if(pairwise_matches[i].src_img_idx == nearest_image && pairwise_matches[i].dst_img_idx == images.size()-1){
 			//__android_log_print(ANDROID_LOG_INFO,"C++ Stitching","Nearest Pair %d %d %d",pairwise_matches[i].src_img_idx
 			//		,pairwise_matches[i].dst_img_idx,pairwise_matches[i].matches.size());
-			if(pairwise_matches[i].inliers_mask.size() < 1){
+			if(pairwise_matches[i].inliers_mask.size() < 25){
 				//return
 				__android_log_print(ANDROID_LOG_WARN,"C++ Stitching","Stitch Rejected < 15 matches point..");
 				images.pop_back();
@@ -833,27 +839,41 @@ JNIEXPORT jint JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativ
 			}
 		}
 	}
-
+	for(int i = 0 ; i < images.size() ; i++){
+		rfs << "i1" << images[i].param.R;
+	}
 	vector<CameraParams> camera_set(2);
 	camera_set[0] = cameras[nearest_image];
 	camera_set[1] = cameras[images.size()-1];
 	Mat comparedRot = cameras[images.size()-1].R.clone();
 	__android_log_print(ANDROID_LOG_DEBUG,"C++ Stitching","Minimized Point %d : %d",src.size(),dst.size());
+	vector<Mat> minimized_R(cameras.size());
 #ifdef MINIMIZE
+#ifndef MINIMIZE_GLOBAL
 	int iterationCount = minimizeRotation(src,dst,camera_set);
 	__android_log_print(ANDROID_LOG_DEBUG,"C++ Stitching","Minimize Iteration %d",iterationCount);
-#endif
-	//Check with ceres minimizer should be best solution
-    printMatrix(comparedRot,"Before");
-    printMatrix(camera_set[1].R,"After");
 	if(isBiggerThanThreshold(comparedRot,camera_set[1].R,0.2)){
-        __android_log_print(ANDROID_LOG_WARN,"C++ Stitching","Stitch Rejected > 4 degree..");
-        images.pop_back();
+		__android_log_print(ANDROID_LOG_WARN,"C++ Stitching","Stitch Rejected > 4 degree..");
+		images.pop_back();
 		return 0;
 	}
-
 	cameras[images.size()-1].R = camera_set[1].R;
-    images[images.size()-1].param.R = camera_set[1].R;
+  	images[images.size()-1].param.R = camera_set[1].R;
+
+#else
+	minimizeRotation(features,pairwise_matches,cameras);
+	for(int i = 0; i < cameras.size() ;i++){
+		//Don't forget to update images[i].param.R
+		images[i].param.R = cameras[i].R;
+	}
+#endif
+#endif
+	//Check with ceres minimizer should be best solution
+//    printMatrix(comparedRot,"Before");
+//    printMatrix(camera_set[1].R,"After");
+
+
+
 	clock_t c_m3 = clock();
 	vector<double> focals;
 	for (size_t i = 0; i < cameras.size(); ++i)
@@ -880,7 +900,6 @@ JNIEXPORT jint JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativ
 		param.ppx *= compose_work_aspect;
 		param.ppy *= compose_work_aspect;
 		param.K().convertTo(k_temp,CV_32F);
-
 		rinv_temp.convertTo(rinv32_temp,CV_32F);
 		Mat k_rinv = k_temp * rinv32_temp;
 		printMatrix(k_temp,"K_RINV1");
@@ -966,10 +985,10 @@ JNIEXPORT jint JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativ
 	clock_t c_m7 = clock();
 	__android_log_print(ANDROID_LOG_INFO,"C++ Stitching,Timer","%lf [Match %lf,Optimize %lf,Warp %lf,Seam %lf,Stitch %lf]",((double)c_m7-c_m1)/CLOCKS_PER_SEC,
 						((double)c_m2-c_m1)/CLOCKS_PER_SEC,((double)c_m3-c_m2)/CLOCKS_PER_SEC,((double)c_m4-c_m3)/CLOCKS_PER_SEC,((double)c_m5-c_m4)/CLOCKS_PER_SEC,((double)c_m7-c_m6)/CLOCKS_PER_SEC);
-	cv::FileStorage rfs("/sdcard/stitch/rotation.yml", cv::FileStorage::WRITE);
+
 	rfs << "k" << images[0].param.K();
     for(int i = 0 ; i < images.size() ; i++){
-        rfs << "i" << images[i].param.R;
+        rfs << "i2" << images[i].param.R;
     }
     for(int i = 0; i < 4 ; i++){
         for(int j = 0; j < 4 ;j++){

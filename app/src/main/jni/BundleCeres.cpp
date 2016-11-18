@@ -118,7 +118,7 @@ struct BaseErrorOneVector {
         double angle = 2 * asin(diff_quat[3]);
         __android_log_print(ANDROID_LOG_DEBUG,"Ceres Minimize","Diff Angle [%lf]",angle*180.0/M_PI);
 
-        double multiplier = 100 - (100 * (log(num_point)/log(30)));
+        double multiplier = 200 - (200 * (log(num_point)/log(50)));
         if(multiplier > 0){
             multiplier = multiplier;
         }
@@ -221,7 +221,7 @@ int minimizeRotation(vector<ImageFeatures> features,vector<MatchesInfo> pairs,ve
     for(int i = 0 ; i < pairs.size() ;i++){
         if(pairs[i].confidence < 0.9)
             continue;
-        for(int j = 0 ; j < pairs[i].matches.size() ; j++){
+        for(int j = 0 ; j < pairs[i].inliers_mask.size() ; j++){
             if(!pairs[i].inliers_mask[j]){
                 continue;
             }
@@ -277,8 +277,8 @@ int minimizeRotation(vector<ImageFeatures> features,vector<MatchesInfo> pairs,ve
         ceres::CostFunction* cost_func = ReprojectionError::Create(p1_pointer,p2_pointer,
                                                                    K_pointer + rpSet[i].matches_image_idx[0]*9,
                                                                    K_pointer + rpSet[i].matches_image_idx[1]*9);
-        problem.AddResidualBlock(cost_func,NULL,rotation_pointer + rpSet[i].matches_image_idx[0]*3
-                ,rotation_pointer + rpSet[i].matches_image_idx[1]*3);
+        problem.AddResidualBlock(cost_func,NULL, rotation_pointer + rpSet[i].matches_image_idx[0]*3
+                , rotation_pointer + rpSet[i].matches_image_idx[1]*3);
     }
 
     ceres::Solver::Options options;
@@ -290,6 +290,7 @@ int minimizeRotation(vector<ImageFeatures> features,vector<MatchesInfo> pairs,ve
 
     int iterationCount = summary.iterations.size();
     __android_log_print(ANDROID_LOG_DEBUG,"Ceres","Iteration %d",iterationCount);
+    cv::FileStorage rfs("/sdcard/stitch/rotation2.yml", cv::FileStorage::WRITE);
     for(int i = 0 ; i < cameras.size() ; i ++){
         Mat R;
         Mat rvec = Mat::zeros(3,1,CV_64F);
@@ -297,6 +298,7 @@ int minimizeRotation(vector<ImageFeatures> features,vector<MatchesInfo> pairs,ve
             rvec.at<double>(j) = rotation_array[i*3+j];
         }
         Rodrigues(rvec,R);
+        rfs << "i" << R;
         R.convertTo(cameras[i].R,CV_32F);
     }
     Mat R_inv = cameras[0].R.inv();

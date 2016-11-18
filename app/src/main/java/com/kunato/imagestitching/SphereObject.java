@@ -290,7 +290,7 @@ public class SphereObject {
                     count++;
                 }
             }
-            //Log.d("GLRenderer","Count :"+count);
+//            Log.d("GLRenderer","BlackPixel :"+count);
             if(count > 0){
                 if(!glRenderer.mUsingOldMatrix == true){
                     glRenderer.mUsingOldMatrix = true;

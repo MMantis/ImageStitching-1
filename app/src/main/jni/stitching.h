@@ -34,7 +34,7 @@
 //Note10.1
 //double work_scale = 0.8, seam_scale = 0.3, compose_scale = 1.0;
 //Nexus5x
-double work_scale = 0.4, seam_scale = 0.2, compose_scale = 1.0;
+double work_scale = 0.2, seam_scale = 0.2, compose_scale = 1.0;
 double tracking_scale = 0.2;
 string result_name = "/mnt/sdcard/result.png";
 int blend_type = Blender::NO;
@@ -73,6 +73,7 @@ vector<vector<Point3f>> p3d;
 
 //No need to re-done
 Ptr<Feature2D> detector = Algorithm::create<Feature2D>("Feature2D.ORB");
+
 int detector_setup = 1;
 extern "C" {
 
