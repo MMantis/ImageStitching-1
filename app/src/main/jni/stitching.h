@@ -24,7 +24,8 @@
 #include "opencv2/stitching/detail/util.hpp"
 #include "opencv2/stitching/detail/warpers.hpp"
 #include "opencv2/stitching/warpers.hpp"
-#include "opencv2/nonfree/features2d.hpp"
+#include "opencv2/features2d.hpp"
+#include "opencv2/xfeatures2d.hpp"
 #include "BundleCeres.h"
 #include "composer.h"
 #include "matcher.h"
@@ -72,8 +73,7 @@ vector<vector<Point2f>> p2d;
 vector<vector<Point3f>> p3d;
 
 //No need to re-done
-Ptr<Feature2D> detector = Algorithm::create<Feature2D>("Feature2D.ORB");
-
+Ptr<Feature2D> detector = AKAZE::create();
 int detector_setup = 1;
 extern "C" {
 
@@ -85,7 +85,7 @@ JNIEXPORT int JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_native
 Rect findResultROI(vector<Rect> rects);
 void tracking(jlong imgaddr,jlong glrotaddr,jlong glprojaddr,jlong retaddr);
 int findNearest(int from,int to,std::vector<ImagePackage> images,Mat &inputR);
-void findDescriptor(Mat img,std::vector<KeyPoint> &keypoints ,Mat &descriptor);
+void findDescriptor(Mat img,std::vector<KeyPoint> &keypoints ,UMat &descriptor);
 vector<Rect> findROI(float warped_image_scale, std::vector<ImagePackage> images);
 inline void vectorMatrixMultiply(float vec[],float matrix[], float *out );
 inline Point3f calc3DPosition(Point2f keyPoint,float multiply_aspect);

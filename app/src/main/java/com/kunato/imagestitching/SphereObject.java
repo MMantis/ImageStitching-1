@@ -25,7 +25,7 @@ import android.util.Log;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
-import org.opencv.highgui.Highgui;
+import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
 import java.nio.ByteBuffer;
@@ -320,7 +320,7 @@ public class SphereObject {
             Mat m = new Mat();
             Imgproc.cvtColor(mat, m, Imgproc.COLOR_RGBA2BGR);
             Core.flip(m, mat, 0);
-            Highgui.imwrite("/sdcard/stitch/readpixel.jpg",mat);
+            Imgcodecs.imwrite("/sdcard/stitch/readpixel.jpg",mat);
         }
     }
 

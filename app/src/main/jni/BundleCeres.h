@@ -23,7 +23,7 @@ using namespace std;
 using namespace cv;
 using namespace cv::detail;
 int minimizeRotation(std::vector<ImageFeatures> features,vector<MatchesInfo> pairs,vector<CameraParams> &cameras);
-int minimizeRotation(vector<Point2f> src,vector<Point2f> dst,vector<CameraParams> &cameras);
+int minimizeRotation(vector<Point2f> src,vector<Point2f> dst,vector<CameraParams> &cameras,int mode);
 
 void test();
 

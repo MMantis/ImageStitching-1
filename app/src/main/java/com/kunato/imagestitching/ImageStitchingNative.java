@@ -6,7 +6,7 @@ import android.util.Log;
 
 import org.opencv.android.Utils;
 import org.opencv.core.*;
-import org.opencv.highgui.Highgui;
+import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
 import java.io.ByteArrayOutputStream;
@@ -38,9 +38,8 @@ public class ImageStitchingNative {
     public int addToPano(Mat imageMat, Mat rotMat,int mPictureSize){
         Log.d("Java Stitch","Current Picture Size : "+mPictureSize);
         //Load Image to GPU
-
         Mat rgba = new Mat(imageMat.cols(),imageMat.rows(),CvType.CV_8UC4);
-        Core.flip(imageMat.t(),imageMat,0);
+        Core.flip(imageMat.t(),imageMat,1);
         Imgproc.cvtColor(imageMat,rgba,Imgproc.COLOR_BGR2RGBA);
         Bitmap iBitmap = Bitmap.createBitmap(rgba.cols(),rgba.rows(),Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(rgba,iBitmap);
@@ -159,7 +158,6 @@ public class ImageStitchingNative {
 
         glRenderer.captureScreen();
         Log.d("Debug","Capture 2");
-
 //        Factory.getFactory(null).getGlRenderer().getSphere().updateBitmap(mUploadingBitmap, mBitmapArea);
 
     }

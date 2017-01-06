@@ -67,7 +67,6 @@
 #include "opencv2/stitching/detail/util.hpp"
 #include "opencv2/stitching/detail/warpers.hpp"
 #include "opencv2/stitching/warpers.hpp"
-#include "opencv2/nonfree/features2d.hpp"
 
 
 using namespace std;

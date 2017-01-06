@@ -38,6 +38,7 @@ import android.view.View;
 import android.widget.Toast;
 
 import org.opencv.core.*;
+import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import static android.hardware.camera2.CaptureRequest.*;
 
@@ -640,6 +641,7 @@ public class MainController extends GLSurfaceView {
             yv12.put(0, 0, mFrameByte);
             Mat rgb = new Mat(mReadSize.getWidth(), mReadSize.getHeight(),CvType.CV_8UC3);
             Imgproc.cvtColor(yv12, rgb, mConvertType,3);
+            Imgcodecs.imwrite("/sdcard/stitch/test.jpg",rgb);
             Thread uiThread = new Thread() {
 
                 @Override

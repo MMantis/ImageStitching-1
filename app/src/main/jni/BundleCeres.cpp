@@ -8,6 +8,8 @@
 vector<int> point_sizes;
 using namespace cv;
 using namespace std;
+#define USING_GYRO
+#define GYRO_ONLY
 
 typedef Eigen::Matrix<double,3,3,Eigen::ColMajor> Matrix3d;
 typedef Eigen::Matrix<double,3,1,Eigen::ColMajor> Vector3d;
@@ -90,8 +92,8 @@ struct ReprojectionError {
 
 
 struct BaseErrorOneVector {
-    BaseErrorOneVector(const double *rvec1,const double *o_rvec2,const int num_point)
-            : rvec1(rvec1), o_rvec2(o_rvec2), num_point(num_point){}
+    BaseErrorOneVector(const double *rvec1,const double *o_rvec2,const int num_point,const int mode)
+            : rvec1(rvec1), o_rvec2(o_rvec2), num_point(num_point), mode(mode){}
     bool operator()(const double* rvec2,double* residuals) const {
         double R1[9];
         double R2[9];
@@ -126,9 +128,13 @@ struct BaseErrorOneVector {
             multiplier = 0;
         }
         //__android_log_print(ANDROID_LOG_DEBUG,"Ceres Minimize","Point Size : %d : %lf",num_point,multiplier);
-        residuals[0] = multiplier * abs(angle);
-//        residuals[0] = 0;
-
+        //MODE 0 = only gyro ; 1 = only correspondace point ; 2 = both
+        if(mode == 2)
+            residuals[0] = multiplier * abs(angle);
+        else if(mode == 0)
+            residuals[0] = 100000000000 * abs(angle);
+        else if(mode == 1)
+            residuals[0] = 0;
         __android_log_print(ANDROID_LOG_DEBUG,"Ceres Minimize","Bases Residuals : %lf",residuals[0]);
         return true;
     }
@@ -137,9 +143,11 @@ struct BaseErrorOneVector {
     static ceres::CostFunction* Create(
             const double *rvec1,
             const double *o_rvec2,
-            const int num_point) {
-        return (new ceres::NumericDiffCostFunction<BaseErrorOneVector,ceres::CENTRAL, 1, 3>(new BaseErrorOneVector(rvec1,o_rvec2,num_point)));
+            const int num_point,
+            const int mode) {
+        return (new ceres::NumericDiffCostFunction<BaseErrorOneVector,ceres::CENTRAL, 1, 3>(new BaseErrorOneVector(rvec1,o_rvec2,num_point,mode)));
     }
+    const int mode;
     const int num_point;
     const double *rvec1;
     const double *o_rvec2;
@@ -312,7 +320,7 @@ int minimizeRotation(vector<ImageFeatures> features,vector<MatchesInfo> pairs,ve
 
 
 //Local Minimize
-int minimizeRotation(vector<Point2f> src,vector<Point2f> dst,vector<CameraParams> &cameras){
+int minimizeRotation(vector<Point2f> src,vector<Point2f> dst,vector<CameraParams> &cameras,int mode){
 
     vector<ReprojectionErrorData> rpSet;
     cout << "point set" << endl;
@@ -373,7 +381,7 @@ int minimizeRotation(vector<Point2f> src,vector<Point2f> dst,vector<CameraParams
         problem.AddResidualBlock(cost_func,NULL,
                 rotation_pointer + rpSet[i].matches_image_idx[1]*3);
     }
-    ceres::CostFunction* cost_func = BaseErrorOneVector::Create(rotation_pointer + rpSet[0].matches_image_idx[0]*3,rotation_pointer + rpSet[0].matches_image_idx[1]*3,rpSet.size());
+    ceres::CostFunction* cost_func = BaseErrorOneVector::Create(rotation_pointer + rpSet[0].matches_image_idx[0]*3,rotation_pointer + rpSet[0].matches_image_idx[1]*3,rpSet.size(),mode);
     problem.AddResidualBlock(cost_func,NULL, rotation_pointer + rpSet[0].matches_image_idx[1]*3);
     ceres::Solver::Options options;
     options.linear_solver_type = ceres::DENSE_SCHUR;

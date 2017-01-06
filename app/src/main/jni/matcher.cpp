@@ -440,6 +440,7 @@ namespace matcher {
         CV_Assert(
                 features2.descriptors.depth() == CV_8U || features2.descriptors.depth() == CV_32F);
 
+        __android_log_print(ANDROID_LOG_DEBUG, "C++ Stitching", "3.1.1");
         matches_info.matches.clear();
 
         Ptr <flann::IndexParams> indexParams = new flann::KDTreeIndexParams();
@@ -449,12 +450,13 @@ namespace matcher {
             indexParams->setAlgorithm(cvflann::FLANN_INDEX_LSH);
             searchParams->setAlgorithm(cvflann::FLANN_INDEX_LSH);
         }
-
+        __android_log_print(ANDROID_LOG_DEBUG, "C++ Stitching", "3.1.2");
         FlannBasedMatcher matcher(indexParams, searchParams);
         vector <vector<DMatch>> pair_matches;
         MatchesSet matches;
 
         // Find 1->2 matches
+        __android_log_print(ANDROID_LOG_DEBUG, "C++ Stitching", "3.1.3");
         matcher.knnMatch(features1.descriptors, features2.descriptors, pair_matches, 2);
         for (size_t i = 0; i < pair_matches.size(); ++i) {
             if (pair_matches[i].size() < 2)
@@ -466,6 +468,7 @@ namespace matcher {
                 matches.insert(make_pair(m0.queryIdx, m0.trainIdx));
             }
         }
+        __android_log_print(ANDROID_LOG_DEBUG, "C++ Stitching", "3.1.4");
         // Find 2->1 matches
         pair_matches.clear();
         matcher.knnMatch(features2.descriptors, features1.descriptors, pair_matches, 2);
@@ -478,6 +481,7 @@ namespace matcher {
                     matches.find(make_pair(m0.trainIdx, m0.queryIdx)) == matches.end())
                 matches_info.matches.push_back(DMatch(m0.trainIdx, m0.queryIdx, m0.distance));
         }
+        __android_log_print(ANDROID_LOG_DEBUG, "C++ Stitching", "3.1.5");
     }
 
     void create(float match_conf, int num_matches_thresh1, int num_matches_thresh2) {
@@ -490,12 +494,13 @@ namespace matcher {
     void match(const vector<ImageFeatures> &features, vector<MatchesInfo> &pairwise_matches,int newIndex)
     {
         const int num_images = static_cast<int>(features.size());
-
+        __android_log_print(ANDROID_LOG_DEBUG, "C++ Stitching", "1");
         Mat_<uchar> mask_;
         mask_ = Mat::zeros(num_images, num_images, CV_8U);
         for(int i = 0; i < num_images ;i++){
             mask_.at<uchar>(i,newIndex) = 1;
         }
+        __android_log_print(ANDROID_LOG_DEBUG, "C++ Stitching", "2");
         vector<pair<int,int> > near_pairs;
         for (int i = 0; i < num_images - 1; ++i)
             for (int j = i + 1; j < num_images; ++j)
@@ -503,7 +508,7 @@ namespace matcher {
                     near_pairs.push_back(make_pair(i, j));
 
         pairwise_matches.resize(num_images * num_images);
-
+        __android_log_print(ANDROID_LOG_DEBUG, "C++ Stitching", "3");
         for (int i = 0; i < near_pairs.size(); ++i)
         {
             int from = near_pairs[i].first;
@@ -527,10 +532,12 @@ namespace matcher {
                 std::swap(pairwise_matches[dual_pair_idx].matches[j].queryIdx,
                           pairwise_matches[dual_pair_idx].matches[j].trainIdx);
         }
+        __android_log_print(ANDROID_LOG_DEBUG, "C++ Stitching", "4");
         for(int i = 0 ; i < pairwise_matches.size(); i++){
             if(pairwise_matches[i].matches.size()!= 0 && pairwise_matches[i].src_img_idx < pairwise_matches[i].dst_img_idx)
             __android_log_print(ANDROID_LOG_DEBUG,"RANSAC","%d:%d (%d,%d)",pairwise_matches[i].src_img_idx,pairwise_matches[i].dst_img_idx,pairwise_matches[i].matches.size(),pairwise_matches[i].num_inliers);
         }
+        __android_log_print(ANDROID_LOG_DEBUG, "C++ Stitching", "5");
 
 //        MatchPairsBody body(*this, features, pairwise_matches, near_pairs);
 //        body(Range(0, static_cast<int>(near_pairs.size())));
@@ -575,10 +582,12 @@ namespace matcher {
                 std::swap(pairwise_matches[dual_pair_idx].matches[j].queryIdx,
                           pairwise_matches[dual_pair_idx].matches[j].trainIdx);
         }
+
         for(int i = 0 ; i < pairwise_matches.size(); i++){
             if(pairwise_matches[i].matches.size()!= 0 && pairwise_matches[i].src_img_idx < pairwise_matches[i].dst_img_idx)
                 __android_log_print(ANDROID_LOG_DEBUG,"RANSAC","%d:%d (%d,%d)",pairwise_matches[i].src_img_idx,pairwise_matches[i].dst_img_idx,pairwise_matches[i].matches.size(),pairwise_matches[i].num_inliers);
         }
+
 
 //        MatchPairsBody body(*this, features, pairwise_matches, near_pairs);
 //        body(Range(0, static_cast<int>(near_pairs.size())));
@@ -590,14 +599,18 @@ namespace matcher {
 
     void match(const ImageFeatures &features1, const ImageFeatures &features2,
                MatchesInfo &matches_info) {
+
+        __android_log_print(ANDROID_LOG_DEBUG, "C++ Stitching", "3.1");
         cpuMatch(features1, features2, matches_info, match_conf_);
         // Check if it makes sense to find homography
+        __android_log_print(ANDROID_LOG_DEBUG, "C++ Stitching", "3.2");
         if (matches_info.matches.size() < static_cast<size_t>(num_matches_thresh1_))
             return;
 
         // Construct point-point correspondences for homography estimation
         Mat src_points(1, static_cast<int>(matches_info.matches.size()), CV_32FC2);
         Mat dst_points(1, static_cast<int>(matches_info.matches.size()), CV_32FC2);
+        __android_log_print(ANDROID_LOG_DEBUG, "C++ Stitching", "3.3");
         for (size_t i = 0; i < matches_info.matches.size(); ++i) {
             const DMatch &m = matches_info.matches[i];
 
@@ -611,18 +624,18 @@ namespace matcher {
             p.y -= features2.img_size.height * 0.5f;
             dst_points.at<Point2f>(0, static_cast<int>(i)) = p;
         }
-
+        __android_log_print(ANDROID_LOG_DEBUG, "C++ Stitching", "3.4");
         // Find pair-wise motion
         matches_info.H = matcher::findHomography(src_points, dst_points, CV_RANSAC, 5.0, matches_info.inliers_mask);
         if (std::abs(determinant(matches_info.H)) < numeric_limits<double>::epsilon())
             return;
-
+        __android_log_print(ANDROID_LOG_DEBUG, "C++ Stitching", "3.5");
         // Find number of inliers
         matches_info.num_inliers = 0;
         for (size_t i = 0; i < matches_info.inliers_mask.size(); ++i)
             if (matches_info.inliers_mask[i])
                 matches_info.num_inliers++;
-
+        __android_log_print(ANDROID_LOG_DEBUG, "C++ Stitching", "3.6");
         // These coeffs are from paper M. Brown and D. Lowe. "Automatic Panoramic Image Stitching
         // using Invariant Features"
         matches_info.confidence =
@@ -635,7 +648,7 @@ namespace matcher {
         // Check if we should try to refine motion
         if (matches_info.num_inliers < num_matches_thresh2_)
             return;
-
+        __android_log_print(ANDROID_LOG_DEBUG, "C++ Stitching", "3.7");
         // Construct point-point correspondences for inliers only
         src_points.create(1, matches_info.num_inliers, CV_32FC2);
         dst_points.create(1, matches_info.num_inliers, CV_32FC2);
@@ -660,6 +673,7 @@ namespace matcher {
         __android_log_print(ANDROID_LOG_VERBOSE,"C++ Matcher","RANSAC inliner A:I [%d : %d]",matches_info.matches.size(),matches_info.num_inliers);
         // Rerun motion estimation on inliers only
         matches_info.H = matcher::findHomography(src_points, dst_points, 0);
+        __android_log_print(ANDROID_LOG_DEBUG, "C++ Stitching", "3.8");
     }
 
     void collectGarbage() {
@@ -670,20 +684,23 @@ namespace matcher {
     cv::Mat findHomography( InputArray _points1, InputArray _points2,
                             int method, double ransacReprojThreshold, OutputArray _mask )
     {
+        __android_log_print(ANDROID_LOG_DEBUG, "C++ Stitching", "3.4.0");
         Mat points1 = _points1.getMat(), points2 = _points2.getMat();
         int npoints = points1.checkVector(2);
         CV_Assert( npoints >= 0 && points2.checkVector(2) == npoints &&
                    points1.type() == points2.type());
-
+        __android_log_print(ANDROID_LOG_DEBUG, "C++ Stitching", "3.4.01");
         Mat H(3, 3, CV_64F);
         CvMat _pt1 = points1, _pt2 = points2;
         CvMat matH = H, c_mask, *p_mask = 0;
+        __android_log_print(ANDROID_LOG_DEBUG, "C++ Stitching", "3.4.02");
         if( _mask.needed() )
         {
             _mask.create(npoints, 1, CV_8U, -1, true);
             p_mask = &(c_mask = _mask.getMat());
         }
-        bool ok = cvFindHomography( &_pt1, &_pt2, &matH, method, ransacReprojThreshold, p_mask ) > 0;
+        __android_log_print(ANDROID_LOG_DEBUG, "C++ Stitching", "3.4.03");
+        bool ok = cvFindHomography2( &_pt1, &_pt2, &matH, method, ransacReprojThreshold, p_mask ) > 0;
         if( !ok )
             H = Scalar(0);
         return H;
@@ -695,16 +712,17 @@ namespace matcher {
         return cv::findHomography(_points1, _points2, method, 0, out);
     }
 
-    int cvFindHomography( const CvMat* objectPoints, const CvMat* imagePoints,
+    int cvFindHomography2( const CvMat* objectPoints, const CvMat* imagePoints,
                       CvMat* __H, int method, double ransacReprojThreshold,
                       CvMat* mask )
     {
+        __android_log_print(ANDROID_LOG_DEBUG, "C++ Stitching", "3.4.1");
         const double confidence = 0.995;
         const int maxIters = 2000;
         const double defaultRANSACReprojThreshold = 3;
         bool result = false;
         Ptr<CvMat> m, M, tempMask;
-
+        __android_log_print(ANDROID_LOG_DEBUG, "C++ Stitching", "3.4.2");
         double H[9];
         CvMat matH = cvMat( 3, 3, CV_64FC1, H );
         int count;
@@ -715,24 +733,25 @@ namespace matcher {
         CV_Assert( count >= 4 );
         if( ransacReprojThreshold <= 0 )
             ransacReprojThreshold = defaultRANSACReprojThreshold;
-
+        __android_log_print(ANDROID_LOG_DEBUG, "C++ Stitching", "3.4.3");
         m = cvCreateMat( 1, count, CV_64FC2 );
         cvConvertPointsHomogeneous( imagePoints, m );
 
         M = cvCreateMat( 1, count, CV_64FC2 );
         cvConvertPointsHomogeneous( objectPoints, M );
-
+        __android_log_print(ANDROID_LOG_DEBUG, "C++ Stitching", "3.4.4");
         if( mask )
         {
             CV_Assert( CV_IS_MASK_ARR(mask) && CV_IS_MAT_CONT(mask->type) &&
                        (mask->rows == 1 || mask->cols == 1) &&
                        mask->rows*mask->cols == count );
         }
+        __android_log_print(ANDROID_LOG_DEBUG, "C++ Stitching", "3.4.5");
         if( mask || count > 4 )
             tempMask = cvCreateMat( 1, count, CV_8U );
         if( !tempMask.empty() )
             cvSet( tempMask, cvScalarAll(1.) );
-
+        __android_log_print(ANDROID_LOG_DEBUG, "C++ Stitching", "3.4.6");
         CvHomographyEstimator estimator(4);
         if( count == 4 )
             method = 0;
@@ -742,7 +761,7 @@ namespace matcher {
             result = estimator.runRANSAC( M, m, &matH, tempMask, ransacReprojThreshold, confidence, maxIters);
         else
             result = estimator.runKernel( M, m, &matH ) > 0;
-
+        __android_log_print(ANDROID_LOG_DEBUG, "C++ Stitching", "3.4.7");
         if( result && count > 4 )
         {
             icvCompressPoints( (CvPoint2D64f*)M->data.ptr, tempMask->data.ptr, 1, count );
@@ -752,7 +771,7 @@ namespace matcher {
                 estimator.runKernel( M, m, &matH );
             estimator.refine( M, m, &matH, 10 );
         }
-
+        __android_log_print(ANDROID_LOG_DEBUG, "C++ Stitching", "3.4.8");
         if( result )
             cvConvert( &matH, __H );
 

@@ -66,13 +66,14 @@
 #include "opencv2/stitching/detail/util.hpp"
 #include "opencv2/stitching/detail/warpers.hpp"
 #include "opencv2/stitching/warpers.hpp"
-#include "opencv2/nonfree/features2d.hpp"
 #include "opencv2/calib3d/calib3d.hpp"
 using namespace std;
 using namespace cv;
 using namespace cv::detail;
 namespace matcher {
-
+    int cvFindHomography2( const CvMat* objectPoints, const CvMat* imagePoints,
+                           CvMat* __H, int method, double ransacReprojThreshold,
+                           CvMat* mask );
     void create(float match_conf, int num_matches_thresh1, int num_matches_thresh2);
     void match(const vector<ImageFeatures> &features, vector<MatchesInfo> &pairwise_matches);
     void match(const vector<ImageFeatures> &features, vector<MatchesInfo> &pairwise_matches,int newIndex);
