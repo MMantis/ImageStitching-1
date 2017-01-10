@@ -58,12 +58,13 @@ struct ImagePackage{
     int done;
     ImageFeatures feature;
     CameraParams param;
+    Mat feature_desc;
 };
 float focal_divider = 3.45;
 //Note10.1
 //float camera_focal_x=1425.559961560,camera_focal_y=1425.559961560,camera_ppx=745.027494,camera_ppy=436.7257419;
 //Nexus5x
-float camera_focal_x=1468.8033741635331*1.4,camera_focal_y=1468.8033741635331*1.4,camera_ppx=556.62040323411281*1.4,camera_ppy=987.91495706781313*1.4;
+float camera_focal_x=1469.7969239257427*1.4,camera_focal_y=1469.7969239257427*1.4,camera_ppx=497.82610894280418*1.4,camera_ppy=923.84763460447925*1.4;
 int work_width = 0;
 int work_height = 0;
 vector<ImagePackage> images;
@@ -73,6 +74,7 @@ vector<vector<Point2f>> p2d;
 vector<vector<Point3f>> p3d;
 
 //No need to re-done
+//Ptr<Feature2D> detector = xfeatures2d::SIFT::create();
 Ptr<Feature2D> detector = AKAZE::create();
 int detector_setup = 1;
 extern "C" {

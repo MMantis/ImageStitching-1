@@ -51,7 +51,7 @@ using namespace std;
 using namespace cv;
 using namespace cv::detail;
 
-void findDescriptor(Mat img,std::vector<KeyPoint> &keypoints ,UMat &descriptor){
+void findDescriptor(Mat img,std::vector<KeyPoint> &keypoints ,UMat &descriptor, Mat &des){
 	if(detector_setup){
 		//for surf
 //		detector->set("hessianThreshold", 300);
@@ -69,10 +69,10 @@ void findDescriptor(Mat img,std::vector<KeyPoint> &keypoints ,UMat &descriptor){
 	mask.setTo(Scalar::all(255));
 	int x_margin = img.rows/3;
 	int y_margin = img.cols/3;
-	Mat des;
 	cvtColor(img, gray_img, CV_BGR2GRAY);
 	__android_log_print(ANDROID_LOG_DEBUG,"C++ Stitching","1");
 	detector->detectAndCompute(gray_img , mask, keypoints, des);
+
 
 	__android_log_print(ANDROID_LOG_DEBUG,"C++ Stitching","2");
 //	surf.detect(gray_img, keypoints,mask);
@@ -131,7 +131,7 @@ JNIEXPORT void JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativ
 	ImageFeatures input_feature;
 	Mat input_descriptor;
 	clock_t c_before_desc = std::clock();
-	findDescriptor(img, input_feature.keypoints, input_feature.descriptors);
+	findDescriptor(img, input_feature.keypoints, input_feature.descriptors,input_descriptor);
 	clock_t c_after_desc = std::clock();
 	vector<MatchesInfo> tracking_matches;
 	//const descriptor (img1)
@@ -149,7 +149,57 @@ JNIEXPORT void JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativ
 	tracking_feature[0] = images[nearest_index].feature;
 	tracking_feature[1] = input_feature;
 	clock_t c_before_matcher = std::clock();
+	//
 	matcher::match(tracking_feature,tracking_matches);
+	int matched_index;
+	for(int i = 0 ; i < tracking_matches.size() ;i++){
+		if(tracking_matches[i].dst_img_idx == 1 && tracking_matches[i].src_img_idx == 0) {
+		 	matched_index = i;
+			break;
+		}
+	}
+	__android_log_print(ANDROID_LOG_DEBUG,"C++ Stitching","matched_inliners_size_original : %d",tracking_matches[matched_index].num_inliers);
+
+	Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create("BruteForce-Hamming");
+	tracking_matches[0].src_img_idx = 0;
+	tracking_matches[0].dst_img_idx = 1;
+	vector<vector<DMatch>> matched_descriptors;
+	matcher->knnMatch(tracking_feature[0].descriptors.getMat(ACCESS_READ),tracking_feature[1].descriptors.getMat(ACCESS_READ),matched_descriptors,2);
+	vector<DMatch> matched_pair;
+	vector<KeyPoint> matched1,matched2;
+	for(int i = 0 ; i < matched_descriptors.size();i++){
+		DMatch first = matched_descriptors[i][0];
+		float dist1 = matched_descriptors[i][0].distance;
+		float dist2 = matched_descriptors[i][1].distance;
+
+		if(dist1 < 0.8f * dist2){
+			matched1.push_back(tracking_feature[0].keypoints[first.queryIdx]);
+			matched2.push_back(tracking_feature[1].keypoints[first.trainIdx]);
+		}
+		matched_pair.push_back(first);
+	}
+	vector<uchar> matched_inliners(matched1.size());
+	for(int i = 0; i < matched1.size() ;i++){
+		Mat col = Mat::ones(3,1,CV_32F);
+		col.at<float>(0) = matched1[i].pt.x;
+		col.at<float>(1) = matched1[i].pt.y;
+		col = tracking_matches[matched_index].H * col;
+		//col = homography * col;
+		col /= col.at<float>(2);
+		double dist = sqrt( col.at<double>(0) - matched2[i].pt.x * col.at<double>(0) - matched2[i].pt.x + col.at<double>(1) - matched2[i].pt.y * col.at<double>(1) - matched2[i].pt.y);
+		if(dist < 2.5f){
+			matched_inliners[i] = true;
+		}
+		else{
+			matched_inliners[i] = false;
+		}
+	}
+	tracking_matches[0].inliers_mask = matched_inliners;
+	tracking_matches[0].num_inliers = matched_inliners.size();
+	tracking_matches[0].matches = matched_pair;
+	__android_log_print(ANDROID_LOG_DEBUG,"C++ Stitching","matched_inliners_size : %d",matched_inliners.size());
+
+
 	clock_t c_after_matcher = std::clock();
 	vector<CameraParams> tracking_cameras(2);
 	int matches_index = - 1;
@@ -752,7 +802,7 @@ JNIEXPORT void JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativ
 	__android_log_print(ANDROID_LOG_INFO,"C++ AddImage","Recived Full Image Size: %d %d",full_img.size().width,full_img.size().height);
 	resize(full_img, img, Size(), work_scale, work_scale);
 #ifdef MINIMIZE
-	findDescriptor(img,feature.keypoints,feature.descriptors);
+	findDescriptor(img,feature.keypoints,feature.descriptors,image_package.feature_desc);
 	feature.img_idx = images.size();
 	feature.img_size = img.size();
 	resize(full_img, img, Size(), seam_scale, seam_scale);
@@ -821,7 +871,69 @@ JNIEXPORT jint JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativ
 	} else {
         __android_log_print(ANDROID_LOG_DEBUG, "C++ Stitching", "1");
 		matcher::match(features, pairwise_matches, images.size() - 1);
-        __android_log_print(ANDROID_LOG_DEBUG, "C++ Stitching", "2");
+
+		int matched_index;
+		for(int i = 0 ; i < pairwise_matches.size() ;i++){
+			if(pairwise_matches[i].dst_img_idx == images.size()-1 && pairwise_matches[i].src_img_idx == nearest_image) {
+				matched_index = i;
+				break;
+			}
+		}
+		__android_log_print(ANDROID_LOG_DEBUG,"C++ Stitching","matched_inliners_size_original : %d",pairwise_matches[matched_index].num_inliers);
+
+		Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create("BruteForce-Hamming");
+		pairwise_matches[0].src_img_idx = nearest_image;
+		pairwise_matches[0].dst_img_idx = images.size() - 1;
+		vector<vector<DMatch>> matched_descriptors;
+		Mat desc1,desc2;
+
+		__android_log_print(ANDROID_LOG_DEBUG,"C++ Stitching","Test1");
+		matcher->knnMatch(images[nearest_image].feature_desc,images[images.size()-1].feature_desc,matched_descriptors,2);
+
+		__android_log_print(ANDROID_LOG_DEBUG,"C++ Stitching","Test2");
+		vector<DMatch> matched_pair;
+		vector<KeyPoint> matched1,matched2;
+		Mat homo_test;
+		pairwise_matches[matched_index].H.convertTo(homo_test,CV_32F);
+		for(int i = 0 ; i < matched_descriptors.size();i++){
+			DMatch first = matched_descriptors[i][0];
+			float dist1 = matched_descriptors[i][0].distance;
+			float dist2 = matched_descriptors[i][1].distance;
+			//?
+			if(dist1 < 0.8f * dist2){
+				matched1.push_back(features[nearest_image].keypoints[first.queryIdx]);
+				matched2.push_back(features[images.size()-1].keypoints[first.trainIdx]);
+			}
+			matched_pair.push_back(first);
+		}
+
+		__android_log_print(ANDROID_LOG_DEBUG,"C++ Stitching","Test3");
+		vector<uchar> matched_inliners(matched1.size());
+		for(int i = 0; i < matched1.size() ;i++){
+			Mat col = Mat::ones(3,1,CV_32F);
+			col.at<float>(0) = matched1[i].pt.x;
+			col.at<float>(1) = matched1[i].pt.y;
+			col = homo_test * col;
+			//col = homography * col;
+			col /= col.at<float>(2);
+			double dist = sqrt( col.at<double>(0) - matched2[i].pt.x * col.at<double>(0) - matched2[i].pt.x + col.at<double>(1) - matched2[i].pt.y * col.at<double>(1) - matched2[i].pt.y);
+			//?
+			if(dist < 2.5f){
+				matched_inliners[i] = true;
+			}
+			else{
+				matched_inliners[i] = false;
+			}
+		}
+
+		__android_log_print(ANDROID_LOG_DEBUG,"C++ Stitching","Test4");
+		pairwise_matches[0].inliers_mask = matched_inliners;
+		pairwise_matches[0].num_inliers = matched_inliners.size();
+		pairwise_matches[0].matches = matched_pair;
+		__android_log_print(ANDROID_LOG_DEBUG,"C++ Stitching","matched_inliners_size : %d",matched_inliners.size());
+
+
+		__android_log_print(ANDROID_LOG_DEBUG, "C++ Stitching", "2");
 	}
 #endif
 	clock_t c_m2 = clock();

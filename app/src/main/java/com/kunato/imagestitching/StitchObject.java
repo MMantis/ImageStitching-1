@@ -48,7 +48,7 @@ public class StitchObject {
     private final String fragmentShaderCode = "" +
             "#version 310 es\n" +
             "#define M_PI 3.1415926535897932384626433832795\n" +
-            "#define SCALE 1468.803406*1.4\n"+
+            "#define SCALE 1469.79692392*1.4\n"+
             "precision highp float;\n" +
             "precision highp int;\n" +
             "uniform int length;\n" +
@@ -374,7 +374,6 @@ public class StitchObject {
     private int mCurrentSize = 1;
     private int mFBOID;
     private int mFBOTex;
-    private static final float SCALE = 1468.803406f;
     private Bitmap[] mCPUBitmap = new Bitmap[NUMBER_OF_TEXTURE];
     int[] cof = new int[NUMBER_OF_TEXTURE*2];
     int[] sof = new int[NUMBER_OF_TEXTURE*2];
