@@ -75,10 +75,12 @@ public class SphereObject {
                     "}" +
                     "float diff_x = (((v_TexCoordinate.x*width_ratio) - (img_x))/(img_width));" +
                     "float diff_y = (((v_TexCoordinate.y*height_ratio) - (img_y))/(img_height));" +
-                    "gl_FragColor = texture2D(sTexture,vec2(diff_x,1.0-diff_y));" +
-                    "if(gl_FragColor.a != 0.0){" +
-                    "gl_FragColor.a = alpha;" +
+                    "vec4 color = texture2D(sTexture,vec2(diff_x,1.0-diff_y));" +
+                    "if(color.a > 0.0){" +
+                    "   gl_FragColor.rgb = color.rgb;\n" +
+                    "   gl_FragColor.a = alpha;\n" +
                     "}" +
+
             "}";
     public boolean mRealRender = false;
     private final int mProgram;
@@ -318,9 +320,8 @@ public class SphereObject {
             Mat mat = new Mat(mHeight, mWidth, CvType.CV_8UC4);
             mat.put(0, 0, pixelsBuffer);
             Mat m = new Mat();
-            Imgproc.cvtColor(mat, m, Imgproc.COLOR_RGBA2BGR);
-            Core.flip(m, mat, 0);
-            Imgcodecs.imwrite("/sdcard/stitch/readpixel.jpg",mat);
+            Core.flip(mat, m, 0);
+            Imgcodecs.imwrite("/sdcard/stitch/readpixel.jpg",m);
         }
     }
 

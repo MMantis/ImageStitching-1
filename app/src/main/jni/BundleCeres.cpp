@@ -221,6 +221,27 @@ struct ReprojectionErrorOneVector {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 //Global Minimize
 int minimizeRotation(vector<ImageFeatures> features,vector<MatchesInfo> pairs,vector<CameraParams> &cameras){
 

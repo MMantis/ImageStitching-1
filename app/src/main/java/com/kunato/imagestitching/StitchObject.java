@@ -27,10 +27,14 @@ import org.opencv.core.Mat;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
+import java.io.BufferedOutputStream;
+import java.io.FileOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 
 public class StitchObject {
@@ -61,7 +65,10 @@ public class StitchObject {
             "uniform ivec2 winSize;\n" +
             "in vec2 texCoord;\n" +
             "out vec4 fragmentColor;\n" +
+            "vec3 readColor;\n" +
+            "vec4 lastColor = vec4(0.0,0.0,0.0,0.0);\n" +
             "int idx = 0;\n" +
+            "float ssd;\n" +
             "vec2 mapForward(in mat3 matrix, in vec3 uv, in float scale){\n" +
             "   vec3 temp = matrix * uv;\n" +
             "   float u = scale * atan(temp.y,temp.x);\n" +
@@ -341,6 +348,7 @@ public class StitchObject {
             "           }" +
             "       }" +
             "   }\n" +
+            "   readColor = vec3(color.r,color.g,color.b);\n" +
             "   return color;\n"+
             "}\n" +
             "void main() {\n" +
@@ -350,12 +358,25 @@ public class StitchObject {
             "   for(int i = length-1 ; i >= 0 ;i--){" +
             "       if(corner[i].x < pos.x + tl.x && corner[i].x + size[i].x > pos.x + tl.x && corner[i].y < pos.y + tl.y && corner[i].y + size[i].y > pos.y + tl.y){" +
             "           idx = i;\n" +
-            "           color += getSampleFromArray(idx);\n" +
+            "           vec4 sampleColor = getSampleFromArray(idx);\n" +
+            "           if(sampleColor.a > 0.0){" +
+            "               color += sampleColor;" +
+            "               if(lastColor.a == 0.0){" +
+            "                   lastColor.rgb = readColor.rgb;" +
+            "                   lastColor.a = 1.0;" +
+            "               }" +
+            "               else{" +
+            "                   ssd +=  ( lastColor.r - readColor.r ) * ( lastColor.r - readColor.r )" +
+            "                   + ( lastColor.g - readColor.g ) * ( lastColor.g - readColor.g )" +
+            "                   + ( lastColor.b - readColor.b ) * ( lastColor.b - readColor.b );\n" +
+            "               }" +
+            "           }" +
             "       }" +
             "   }" +
             "   if(color.a > 0.0){" +
-            "       color/=color.w;" +
-            "       fragmentColor = color;" +
+            "       color/=color.a;" +
+            "       fragmentColor.rgba = color.rgba;" +
+            "       fragmentColor.a = 0.0039 + ssd;" +
             "   }" +
             "   \n" +
             "   \n" +
@@ -567,6 +588,7 @@ public class StitchObject {
 
         long start2 = System.currentTimeMillis();
         GLES31.glUseProgram(mProgram);
+        GLES31.glBlendFunc(GLES31.GL_ONE,GLES31.GL_ZERO);
         GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, mFBOID);
         GLES31.glViewport(0, 0, mWidth, mHeight);
         GLES31.glClear(GLES31.GL_COLOR_BUFFER_BIT);
@@ -609,23 +631,65 @@ public class StitchObject {
         Log.d("Stitch GPU","TimeSpend : "+(end-start2)*0.001+ " : "+(start2-start)*0.001 + " ; "+count);
         //END OF RENDERING
 
-//        mScreenBuffer = ByteBuffer.allocateDirect(mHeight * mWidth * 4);
-//        mScreenBuffer.order(ByteOrder.nativeOrder());
-//        GLES31.glReadPixels(0, 0, mWidth, mHeight, GLES31.GL_RGBA, GLES31.GL_UNSIGNED_BYTE, mScreenBuffer);
-//
-//        mScreenBuffer.rewind();
-//        byte pixelsBuffer[] = new byte[4*mHeight*mWidth];
-//        mScreenBuffer.get(pixelsBuffer);
-//        Mat mat = new Mat(mHeight, mWidth, CvType.CV_8UC4);
-//        mat.put(0, 0, pixelsBuffer);
-//        Mat m = new Mat();
-//        Imgproc.cvtColor(mat, m, Imgproc.COLOR_RGBA2BGR);
-//        Core.flip(m, mat, 0);
-//        Highgui.imwrite("/sdcard/stitch/stitchfbo.jpg",mat);
+        mScreenBuffer = ByteBuffer.allocateDirect(mHeight * mWidth * 4);
+        mScreenBuffer.order(ByteOrder.nativeOrder());
+        GLES31.glReadPixels(0, 0, mWidth, mHeight, GLES31.GL_RGBA, GLES31.GL_UNSIGNED_BYTE, mScreenBuffer);
+
+        mScreenBuffer.rewind();
+        byte pixelsBuffer[] = new byte[4*mHeight*mWidth];
+        mScreenBuffer.get(pixelsBuffer);
+        Mat mat = new Mat(mHeight, mWidth, CvType.CV_8UC4);
+        mat.put(0, 0, pixelsBuffer);
+        Mat m = new Mat();
+        List<Mat> mats = new ArrayList<Mat>();
+        mats.add(new Mat(mHeight, mWidth, CvType.CV_8U));
+        mats.add(new Mat(mHeight, mWidth, CvType.CV_8U));
+        mats.add(new Mat(mHeight, mWidth, CvType.CV_8U));
+        mats.add(new Mat(mHeight, mWidth, CvType.CV_8U));
+
+        Core.split(mat,mats);
+        byte alphaBuffer[] = new byte[mHeight*mWidth];
+        mats.get(3).get(0,0,alphaBuffer);
+        Imgproc.cvtColor(mat, m, Imgproc.COLOR_RGBA2BGR);
+        int countI = 0;
+        int maxI = 0;
+        BufferedOutputStream bos = null;
+        int sum = 0;
+        int minI = 999;
+        for(int i = 0 ; i < alphaBuffer.length ;i++){
+            if(alphaBuffer[i] > 1){
+                countI++;
+                if((alphaBuffer[i] & 0xFF) > maxI){
+                    maxI = alphaBuffer[i] & 0xFF;
+                }
+                if((alphaBuffer[i] & 0xFF) < minI){
+                    minI = alphaBuffer[i] & 0xFF;
+                }
+
+                sum += alphaBuffer[i] & 0xFF;
+            }
+        }
+//        try {
+//            bos = new BufferedOutputStream(new FileOutputStream(new File("/sdcard/stitch/test.mat")));
+//            bos.write(alphaBuffer);
+//            bos.flush();
+//            bos.close();
+//            Log.d("Stitch GPU","Writing File Success");
+//        } catch (Exception e) {
+//            Log.d("Stitch GPU","Writing File Error");
+//        }
+
+        Log.d("Stitch GPU","Full : "+alphaBuffer.length+" countI : "+countI +" maxI : " + maxI+" avg : "+sum/countI);
+        Core.flip(m, mat, 0);
+        Mat ssdMat = new Mat();
+        Core.flip(mats.get(3),ssdMat,0);
+        Imgcodecs.imwrite("/sdcard/stitch/stitchSSD.jpg",ssdMat);
+        Imgcodecs.imwrite("/sdcard/stitch/stitchResult.jpg",mat);
 
         //END OF IMWRITE
         GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, 0);
         mUpdate = false;
+        GLES31.glBlendFunc(GLES31.GL_SRC_ALPHA, GLES31.GL_ONE_MINUS_SRC_ALPHA);
     }
 
 

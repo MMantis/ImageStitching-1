@@ -112,7 +112,7 @@ public class MainController extends GLSurfaceView {
 
         @Override
         public void onImageAvailable(ImageReader reader) {
-            Image image = reader.acquireLatestImage();
+            Image image = reader.acquireNextImage();
             if(!mAsyncRunning && mRunning){
                 mAsyncRunning = true;
                 mRunning = false;
@@ -365,6 +365,7 @@ public class MainController extends GLSurfaceView {
                         break;
                     }
                 }
+                Log.d("CaptureRequest","ISO : "+mLastSensorISO*i+" ShutterSpeed : "+mLastShutterSpeed/i);
                 mPreviewRequestBuilder.set(CONTROL_AE_MODE,CONTROL_AE_MODE_OFF);
                 mPreviewRequestBuilder.set(SENSOR_SENSITIVITY,mLastSensorISO*i);
                 mPreviewRequestBuilder.set(SENSOR_EXPOSURE_TIME,mLastShutterSpeed/i);
@@ -618,10 +619,21 @@ public class MainController extends GLSurfaceView {
 //                Matrix.multiplyMM(temp, 0, Util.SWAP_X, 0, rotMat, 0);
 //                Matrix.multiplyMM(rotMat, 0, Util.SWAP_Z, 0, temp, 0);
                 mGLRenderer.setRotationMatrix(correctedRotMat);
+
                 if(!mAsyncRunning)
-                    if(!mRunning)
-                        if(ImageStitchingNative.getNativeInstance().keyFrameSelection(rotMat) == 1)
-                            mRunning = true;
+
+                    if(!mRunning) {
+                        float axisX = event.values[0];
+                        float axisY = event.values[1];
+                        float axisZ = event.values[2];
+                        float omegaMagnitude = (axisX * axisX + axisY * axisY + axisZ * axisZ);
+                        //Log.d("SensorListener","Gyro Magnitude : "+omegaMagnitude);
+                        if (omegaMagnitude < 0.01) {
+                            if (ImageStitchingNative.getNativeInstance().keyFrameSelection(rotMat) == 1) {
+                                mRunning = true;
+                            }
+                        }
+                    }
             }
             if (event.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR){
                 Log.i("SensorListener","RotationVector"+Arrays.toString(event.values));
