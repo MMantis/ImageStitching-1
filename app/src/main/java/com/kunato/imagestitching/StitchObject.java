@@ -28,7 +28,6 @@ import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
 import java.io.BufferedOutputStream;
-import java.io.FileOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
@@ -387,12 +386,14 @@ public class StitchObject {
     private int mTLY;
     private final int mProgram;
     public final int NUMBER_OF_TEXTURE = 11;
+    private int mLastSSDSum = 0;
     //Only one texture
     private int[] mTextures = new int[NUMBER_OF_TEXTURE];
     private int[] corners = new int[NUMBER_OF_TEXTURE*2];
     private int[] sizes = new int[NUMBER_OF_TEXTURE*2];
     private int[] mFBO = new int[1];
     private int mCurrentSize = 1;
+    private int mLastSSDCount = 0;
     private int mFBOID;
     private int mFBOTex;
     private Bitmap[] mCPUBitmap = new Bitmap[NUMBER_OF_TEXTURE];
@@ -669,6 +670,7 @@ public class StitchObject {
                 sum += alphaBuffer[i] & 0xFF;
             }
         }
+
 //        try {
 //            bos = new BufferedOutputStream(new FileOutputStream(new File("/sdcard/stitch/test.mat")));
 //            bos.write(alphaBuffer);
@@ -679,7 +681,9 @@ public class StitchObject {
 //            Log.d("Stitch GPU","Writing File Error");
 //        }
 
-        Log.d("Stitch GPU","Full : "+alphaBuffer.length+" countI : "+countI +" maxI : " + maxI+" avg : "+sum/countI);
+        Log.d("Stitch GPU","Sum : "+sum+" countI : "+countI +" maxI : " + maxI+" Avg : "+sum/countI +" Avg on last : "+(sum-mLastSSDSum)/(countI-mLastSSDCount));
+        mLastSSDSum = sum;
+        mLastSSDCount = countI;
         Core.flip(m, mat, 0);
         Mat ssdMat = new Mat();
         Core.flip(mats.get(3),ssdMat,0);
