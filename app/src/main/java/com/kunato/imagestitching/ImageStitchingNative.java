@@ -37,13 +37,12 @@ public class ImageStitchingNative {
     }
     public int addToPano(Mat imageMat, Mat rotMat,int mPictureSize){
         Log.d("Java Stitch","Current Picture Size : "+mPictureSize);
-        //Load Image to GPU
-        Mat rgba = new Mat(imageMat.cols(),imageMat.rows(),CvType.CV_8UC4);
         Core.flip(imageMat.t(),imageMat,1);
-        Imgproc.cvtColor(imageMat,rgba,Imgproc.COLOR_BGR2RGBA);
-        Bitmap iBitmap = Bitmap.createBitmap(rgba.cols(),rgba.rows(),Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(rgba,iBitmap);
-
+//        Imgcodecs.imwrite("/sdcard/stitch/imageMat.jpeg",test);
+        Bitmap iBitmap = Bitmap.createBitmap(imageMat.cols(),imageMat.rows(),Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(imageMat,iBitmap);
+        Mat tst = new Mat();
+        Imgproc.cvtColor(imageMat,tst,Imgproc.COLOR_RGBA2BGR);
         Factory.getFactory(null).getGlRenderer().getStitch().bitmapToCPU(iBitmap,mPictureSize);
 
         Factory.mainController.startRecordQuaternion();
@@ -54,7 +53,7 @@ public class ImageStitchingNative {
         Mat area = new Mat(1,4,CvType.CV_32F);
         Mat rot = new Mat(3,3,CvType.CV_32F);
         Log.d("JAVA Stitch", "Image Rotation Input : "+rotMat.dump());
-        nativeAddStitch(imageMat.getNativeObjAddr(), rotMat.getNativeObjAddr());
+        nativeAddStitch(tst.getNativeObjAddr(), rotMat.getNativeObjAddr());
         Mat refinedMat = new Mat(4,4,CvType.CV_32F);
         int rtCode = nativeStitch(ret.getNativeObjAddr(), area.getNativeObjAddr(),rot.getNativeObjAddr(),refinedMat.getNativeObjAddr(),roi.getNativeObjAddr(),k_rinv.getNativeObjAddr());
         Log.d("JAVA Stitch", "JNI Return Code : "+rtCode + "");
@@ -106,60 +105,7 @@ public class ImageStitchingNative {
 //        Factory.mainController.requireAlign();
 
         Factory.getFactory(null).getGlRenderer().getSphere().updateArea(mBitmapArea);
-        return rtCode;
-    }
-
-    public void aligning(Mat input, float[] glRot){
-        Factory.mainController.startRecordQuaternion();
-        //Highgui.imwrite("/sdcard/stitch/align.jpg",input);
-        long cStart = System.nanoTime();
-        Mat glRotMat = new Mat(4,4,CvType.CV_32F);
-        glRotMat.put(0, 0, glRot);
-        Log.d("JAVA Stitch","Align Input Rotation :"+ Arrays.toString(glRot));
-        for (int i = 0; i < 4; i++) {
-            Log.d("JAVA Stitch", String.format("[%f %f %f %f]", glRot[i * 4], glRot[i * 4 + 1], glRot[i * 4 + 2], glRot[i*4 +3]));
-        }
-        Mat ret = new Mat(4,4,CvType.CV_32F);
-        long cBeforeNative = System.nanoTime();
-        nativeAligning(input.getNativeObjAddr(), glRotMat.getNativeObjAddr(), ret.getNativeObjAddr());
-        long cEnd = System.nanoTime();
-        Log.d("JAVA Stitch", "Time Used: "+((cEnd-cBeforeNative)*Util.NS2S)+","+(cBeforeNative-cStart)*Util.NS2S+" Return Mat" + ret.toString());
-        //using return as homo
-        float[] data;
-        if(false) {
-            data = new float[9];
-            ret.get(0, 0, data);
-            data[2] /= input.height();
-            data[5] /= input.width();
-
-            Log.d("JAVA Stitch","HomographyMat");
-            for (int i = 0; i < 3; i++) {
-
-                Log.d("JAVA Stitch", String.format("[%f %f %f]", data[i * 3], data[i * 3 + 1], data[i * 3 + 2]));
-            }
-        }
-        else{
-            data = new float[]{1,0,0,0,1,0,0,0,1};
-            float[] rotmat = new float[16];
-            ret.get(0, 0, rotmat);
-
-            Log.d("JAVA Stitch",Arrays.toString(Factory.mainController.mQuaternion));
-            float[] quad = Util.matrixToQuad(rotmat);
-            Factory.mainController.updateQuaternion(quad,Factory.mainController.mDeltaQuaternion);
-
-            Log.d("JAVA Stitch", "Align Output Rotation :"+Arrays.toString(Factory.mainController.mDeltaQuaternion));
-//            Factory.mainController.mQuaternion = quad;
-//            Log.d("quad+",Arrays.toString(Factory.mainController.mQuaternion));
-//            Factory.mainController.mRotmat = rotmat;
-        }
-
-        GLRenderer glRenderer = Factory.getFactory(null).getGlRenderer();
-        glRenderer.setHomography(data);
-
-        glRenderer.captureScreen();
-        Log.d("Debug","Capture 2");
-//        Factory.getFactory(null).getGlRenderer().getSphere().updateBitmap(mUploadingBitmap, mBitmapArea);
-
+        return 1;
     }
 
     public void setContext(Context context){

@@ -16,6 +16,8 @@
 
 package com.kunato.imagestitching;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.ImageFormat;
 import android.hardware.SensorManager;
 import android.os.Handler;
@@ -23,13 +25,16 @@ import android.os.HandlerThread;
 import android.renderscript.Allocation;
 import android.renderscript.Element;
 import android.renderscript.RenderScript;
+import android.renderscript.ScriptIntrinsicYuvToRGB;
 import android.renderscript.Type;
 import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
 
+import org.opencv.android.Utils;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
 /**
@@ -37,38 +42,92 @@ import org.opencv.imgproc.Imgproc;
  */
 public class RSProcessor {
 
+    private final Bitmap bitmap;
     private Allocation mInputAllocation;
-
+    private Allocation mOutputAllocation;
+    private Size mDimension;
     private HandlerThread mProcessingThread;
     private Handler mProcessingHandler;
+    private ScriptC_processing mergeScript;
     public ProcessingTask mTask;
-    private Size mSize;
     private MainController mController;
-    private boolean alignRequest = false;
-    public RSProcessor(RenderScript rs, Size dimensions, MainController controller) {
-        mSize = dimensions;
+    private ScriptIntrinsicYuvToRGB intrinsic;
+    private byte[] readbytes;
+    public RSProcessor(RenderScript rs, Size dimensions, MainController controller, Surface surface) {
         mController = controller;
+        mDimension = dimensions;
         Type.Builder yuvTypeBuilder = new Type.Builder(rs, Element.YUV(rs));
         yuvTypeBuilder.setX(dimensions.getWidth());
         yuvTypeBuilder.setY(dimensions.getHeight());
-        yuvTypeBuilder.setYuvFormat(ImageFormat.YV12);
+        yuvTypeBuilder.setYuvFormat(ImageFormat.YUV_420_888);
         mInputAllocation = Allocation.createTyped(rs, yuvTypeBuilder.create(),
-                Allocation.USAGE_IO_INPUT);
-        mProcessingThread = new HandlerThread("RSProcessor");
+                Allocation.USAGE_IO_INPUT | Allocation.USAGE_SCRIPT);
+        Type.Builder rgbTypeBuilder = new Type.Builder(rs, Element.RGBA_8888(rs));
+        rgbTypeBuilder.setX(dimensions.getWidth());
+        rgbTypeBuilder.setY(dimensions.getHeight());
+        mOutputAllocation = Allocation.createTyped(rs, rgbTypeBuilder.create(),
+                Allocation.USAGE_IO_OUTPUT | Allocation.USAGE_SCRIPT);
+        mOutputAllocation.setSurface(surface);
+        bitmap = Bitmap.createBitmap(dimensions.getWidth(), dimensions.getHeight(), Bitmap.Config.ARGB_8888);
+//        mOutputAllocation = Allocation.createTyped(rs,mInputAllocation.getType());
+        mProcessingThread = new HandlerThread("ViewfinderProcessor");
         mProcessingThread.start();
         mProcessingHandler = new Handler(mProcessingThread.getLooper());
-        mTask = new ProcessingTask(mInputAllocation);
+        intrinsic = ScriptIntrinsicYuvToRGB.create(rs,Element.U8_4(rs));
+//        intrinsic.setInput(mInputAllocation);
+//        intrinsic.forEach(mOutputAllocation);
+//        mOutputAllocation.copyTo(bitmap);
+//        mergeScript = new ScriptC_processing(rs);
+        mInputAllocation.setOnBufferAvailableListener(new BufferListener());
+//        mTask = new ProcessingTask(mInputAllocation);
         Log.d("RS","RS Processor init");
 
     }
-    public void requestAligning(){
-        alignRequest = true;
-    }
-    public Surface getInputHdrSurface() {
+    public Surface getInputSurface() {
         return mInputAllocation.getSurface();
     }
+    public void setOutputSurface(Surface surface){
+        mOutputAllocation.setSurface(surface);
+    }
+    class OutBufferListener implements  Allocation.OnBufferAvailableListener{
 
+        private boolean write = true;
 
+        @Override
+        public void onBufferAvailable(Allocation allocation) {
+
+            //WORK
+            if(write) {
+
+                Log.d("RS", "Write Mat");
+
+                write = false;
+            }
+            mController.requestStitch();
+        }
+
+    }
+    class BufferListener implements  Allocation.OnBufferAvailableListener {
+
+        @Override
+        public void onBufferAvailable(Allocation allocation) {
+            Log.d("RS", "Received Buffer");
+            mInputAllocation.ioReceive();
+            intrinsic.setInput(mInputAllocation);
+            intrinsic.forEach(mOutputAllocation);
+            mOutputAllocation.copyTo(bitmap);
+            mOutputAllocation.ioSend();
+            Log.d("RS","Output");
+            if(mController.mFrame == null)
+                mController.mFrame = new Mat(mDimension.getWidth(), mDimension.getHeight() ,CvType.CV_8UC4);
+            Utils.bitmapToMat(bitmap,mController.mFrame);
+//            Imgcodecs.imwrite("/sdcard/stitch/rs.jpeg", mat);
+            if (mController.mFrameByte == null){
+                mController.mFrameByte = new byte[mDimension.getWidth() * mDimension.getHeight() * ImageFormat.getBitsPerPixel(ImageFormat.FLEX_RGBA_8888) / 8];
+             }
+            mController.requestStitch();
+        }
+    }
     /**
      * Simple class to keep track of incoming frame count,
      * and to process the newest one in the processing thread
@@ -81,20 +140,21 @@ public class RSProcessor {
         public ProcessingTask(Allocation input) {
             mInputAllocation = input;
             mInputAllocation.setOnBufferAvailableListener(this);
-            Log.d("RS","processing task init");
+
+            Log.d("RS", "processing task init");
         }
 
         @Override
         public void onBufferAvailable(Allocation a) {
+
+            synchronized (this) {
                 mPendingFrames++;
                 mProcessingHandler.post(this);
-                Log.d("RS","BufferAvailable");
-
+            }
         }
 
         @Override
         public void run() {
-            Log.d("RS","Running");
             // Find out how many frames have arrived
             int pendingFrames;
             synchronized (this) {
@@ -109,21 +169,11 @@ public class RSProcessor {
             for (int i = 0; i < pendingFrames; i++) {
                 mInputAllocation.ioReceive();
             }
+            mergeScript.set_gCurrentFrame(mInputAllocation);
 
-            if(alignRequest){
-                alignAction();
-                alignRequest = false;
-            }
-
-
-//            if(!mController.mAsyncRunning && mController.mRunning){
-//                mController.mAsyncRunning = true;
-//                mController.mRunning = false;
-//                Log.d("RS", "Running");
-//                mInputAllocation.copyTo(mController.mFrameByte);
-//                mController.doStitching();
-//            }
-
+            // Run processing pass
+            mergeScript.forEach_convertFrames(mOutputAllocation);
+            mOutputAllocation.ioSend();
 
             //WORK
 //            if (write && mFrameByte != null) {
@@ -135,19 +185,7 @@ public class RSProcessor {
 //            }
         }
 
-        private void alignAction() {
-//            Log.d("RSProcessing",mSize.getWidth()+","+mSize.getHeight());
-            //Swap width and height because of camera array.
-            Mat mat = new Mat(mSize.getHeight(), mSize.getWidth(), CvType.CV_8UC4);
-            byte[] frameByte = new byte[mSize.getWidth()*mSize.getHeight()*4];
-            mInputAllocation.copyTo(frameByte);
-            mat.put(0, 0, frameByte);
-            Imgproc.cvtColor(mat, mat, Imgproc.COLOR_RGBA2BGR);
-            float[] rotMat = new float[16];
-            SensorManager.getRotationMatrixFromVector(rotMat, mController.mQuaternion);
-            //ImageStitchingNative.getNativeInstance().aligning(mat, rotMat, mController.mGLRenderer.mProjectionMatrix);
-//            alignRequest = false;
-        }
+
     }
 
 }

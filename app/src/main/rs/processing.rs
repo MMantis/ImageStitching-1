@@ -17,11 +17,8 @@
 #pragma rs java_package_name(com.kunato.imagestitching)
 
 rs_allocation gCurrentFrame;
-int gCutPointX = 0;
-int gDoMerge = 0;
-int gFrameCounter = 0;
 
-uchar4 __attribute__((kernel)) mergeHdrFrames(uint32_t x, uint32_t y) {
+uchar4 __attribute__((kernel)) convertFrames(uint32_t x, uint32_t y) {
 
     // Read in pixel values from latest frame - YUV color space
 
@@ -30,49 +27,14 @@ uchar4 __attribute__((kernel)) mergeHdrFrames(uint32_t x, uint32_t y) {
     curPixel.g = rsGetElementAtYuv_uchar_U(gCurrentFrame, x, y);
     curPixel.b = rsGetElementAtYuv_uchar_V(gCurrentFrame, x, y);
     curPixel.a = 255;
-
-    uchar4 mergedPixel;
-    /* if (gDoMerge == 1) {
-        // Complex HDR fusion technique
-        mergedPixel = curPixel / 2 + prevPixel / 2;
-
-        Experimental color saturation boosting merge
-        mergedPixel.r = curPixel.r / 2 + prevPixel.r / 2;
-
-        uchar saturationCurrent = abs(curPixel.g - 128) + abs(curPixel.b - 128);
-        uchar saturationPrev = abs(prevPixel.g - 128) + abs(prevPixel.b - 128);
-        mergedPixel.g = saturationCurrent > saturationPrev ? curPixel.g : prevPixel.g;
-        mergedPixel.b = saturationCurrent > saturationPrev ? curPixel.b : prevPixel.b;
-
-    } else if (gCutPointX > 0) {
-        // Composite side by side
-        mergedPixel = ((x < gCutPointX) ^ (gFrameCounter & 0x1)) ?
-                curPixel : prevPixel;
-    } else {
-        // Straight passthrough
-        mergedPixel = curPixel;
-    }
-    */
-
-
-
-    //Just convert to RGB
-    mergedPixel = curPixel;
-
-
-    // Convert YUV to RGB, JFIF transform with fixed-point math
-    // R = Y + 1.402 * (V - 128)
-    // G = Y - 0.34414 * (U - 128) - 0.71414 * (V - 128)
-    // B = Y + 1.772 * (U - 128)
-
     int4 rgb;
-    rgb.r = mergedPixel.r +
-            mergedPixel.b * 1436 / 1024 - 179;
-    rgb.g = mergedPixel.r -
-            mergedPixel.g * 46549 / 131072 + 44 -
-            mergedPixel.b * 93604 / 131072 + 91;
-    rgb.b = mergedPixel.r +
-            mergedPixel.g * 1814 / 1024 - 227;
+    rgb.r = curPixel.r +
+            curPixel.b * 1436 / 1024 - 179;
+    rgb.g = curPixel.r -
+            curPixel.g * 46549 / 131072 + 44 -
+            curPixel.b * 93604 / 131072 + 91;
+    rgb.b = curPixel.r +
+            curPixel.g * 1814 / 1024 - 227;
     rgb.a = 255;
 
 

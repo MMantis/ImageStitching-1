@@ -45,6 +45,7 @@
 #pragma ide diagnostic ignored "ArrayIssue"
 #define EXPERIMENT 0
 #define MINIMIZE
+#define DEBUG
 #include "stitching.h"
 
 using namespace std;
@@ -117,247 +118,6 @@ int findNearest(int from, int to, std::vector<ImagePackage> images,Mat &inputR){
 }
 
 
-JNIEXPORT void JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativeAligning(JNIEnv*, jobject, jlong imgaddr,jlong glrotaddr,jlong retaddr){
-	__android_log_print(ANDROID_LOG_DEBUG,"C++ aligning","Start");
-
-	clock_t c_start = std::clock();
-	Mat& full_img  = *(Mat*)imgaddr;
-	transpose(full_img, full_img);
-	flip(full_img, full_img,0);
-	Mat img;
-	resize(full_img,img,Size(),work_scale,work_scale);
-
-	Mat& gl_rot = *(Mat*) glrotaddr;
-	ImageFeatures input_feature;
-	Mat input_descriptor;
-	clock_t c_before_desc = std::clock();
-	findDescriptor(img, input_feature.keypoints, input_feature.descriptors,input_descriptor);
-	clock_t c_after_desc = std::clock();
-	vector<MatchesInfo> tracking_matches;
-	//const descriptor (img1)
-	vector<ImageFeatures> tracking_feature(2);
-	input_feature.img_idx = -1;
-	input_feature.img_size = img.size();
-	Mat input_R(3,3,CV_32F);
-	for(int j = 0 ; j < 3 ;j++){
-		for(int k = 0; k < 3 ;k++){
-			input_R.at<float>(j,k) = gl_rot.at<float>(j,k);
-		}
-	}
-	int nearest_index = findNearest(0,images.size(),images,input_R);
-
-	tracking_feature[0] = images[nearest_index].feature;
-	tracking_feature[1] = input_feature;
-	clock_t c_before_matcher = std::clock();
-	//
-	matcher::match(tracking_feature,tracking_matches);
-	int matched_index;
-	for(int i = 0 ; i < tracking_matches.size() ;i++){
-		if(tracking_matches[i].dst_img_idx == 1 && tracking_matches[i].src_img_idx == 0) {
-		 	matched_index = i;
-			break;
-		}
-	}
-	__android_log_print(ANDROID_LOG_DEBUG,"C++ Stitching","matched_inliners_size_original : %d",tracking_matches[matched_index].num_inliers);
-
-	Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create("BruteForce-Hamming");
-	tracking_matches[0].src_img_idx = 0;
-	tracking_matches[0].dst_img_idx = 1;
-	vector<vector<DMatch>> matched_descriptors;
-	matcher->knnMatch(tracking_feature[0].descriptors.getMat(ACCESS_READ),tracking_feature[1].descriptors.getMat(ACCESS_READ),matched_descriptors,2);
-	vector<DMatch> matched_pair;
-	vector<KeyPoint> matched1,matched2;
-	for(int i = 0 ; i < matched_descriptors.size();i++){
-		DMatch first = matched_descriptors[i][0];
-		float dist1 = matched_descriptors[i][0].distance;
-		float dist2 = matched_descriptors[i][1].distance;
-
-		if(dist1 < 0.8f * dist2){
-			matched1.push_back(tracking_feature[0].keypoints[first.queryIdx]);
-			matched2.push_back(tracking_feature[1].keypoints[first.trainIdx]);
-		}
-		matched_pair.push_back(first);
-	}
-	vector<uchar> matched_inliners(matched1.size());
-	for(int i = 0; i < matched1.size() ;i++){
-		Mat col = Mat::ones(3,1,CV_32F);
-		col.at<float>(0) = matched1[i].pt.x;
-		col.at<float>(1) = matched1[i].pt.y;
-		col = tracking_matches[matched_index].H * col;
-		//col = homography * col;
-		col /= col.at<float>(2);
-		double dist = sqrt( col.at<double>(0) - matched2[i].pt.x * col.at<double>(0) - matched2[i].pt.x + col.at<double>(1) - matched2[i].pt.y * col.at<double>(1) - matched2[i].pt.y);
-		if(dist < 2.5f){
-			matched_inliners[i] = true;
-		}
-		else{
-			matched_inliners[i] = false;
-		}
-	}
-	tracking_matches[0].inliers_mask = matched_inliners;
-	tracking_matches[0].num_inliers = matched_inliners.size();
-	tracking_matches[0].matches = matched_pair;
-	__android_log_print(ANDROID_LOG_DEBUG,"C++ Stitching","matched_inliners_size : %d",matched_inliners.size());
-
-
-	clock_t c_after_matcher = std::clock();
-	vector<CameraParams> tracking_cameras(2);
-	int matches_index = - 1;
-
-	for(int i = 0 ; i < tracking_matches.size() ;i++){
-		if(tracking_matches[i].dst_img_idx == 1 && tracking_matches[i].src_img_idx == 0){
-			__android_log_print(ANDROID_LOG_DEBUG,"C++ aligning","Used Pair ,%d %d %d",tracking_matches[i].src_img_idx , tracking_matches[i].dst_img_idx,tracking_matches[i].matches.size());
-			matches_index = i;
-			break;
-		}
-	}
-
-	for(int i = 0 ; i < 2; i++){
-		CameraParams tracking_camera;
-		tracking_cameras[i].ppy = images[nearest_index].param.ppy;
-		tracking_cameras[i].ppx = images[nearest_index].param.ppx;
-		tracking_cameras[i].focal = images[nearest_index].param.focal;
-		tracking_cameras[i].aspect = 1;
-		if( i == 1 ){
-			tracking_camera.R = input_R;
-		}
-		else{
-			tracking_camera.R = images[nearest_index].param.R;
-		}
-		tracking_cameras[i] = tracking_camera;
-
-	}
-	vector<Point2f> src_points;
-	vector<Point2f> dst_points;
-	for(int i = 0 ; i < tracking_matches[matches_index].matches.size();i++){
-		if(tracking_matches[matches_index].inliers_mask[i]){
-			src_points.push_back(tracking_feature[0].keypoints[tracking_matches[matches_index].matches[i].queryIdx].pt);
-			dst_points.push_back(tracking_feature[1].keypoints[tracking_matches[matches_index].matches[i].trainIdx].pt);
-		}
-	}
-	clock_t c_before_bundle = clock();
-	minimizeRotation(src_points,dst_points,tracking_cameras,2);
-	clock_t c_after_bundle = clock();
-	Mat& R = *(Mat*)retaddr;
-	for(int i = 0; i < 4 ; i++){
-		for(int j = 0; j < 4 ;j++){
-			if(i == 3 && j == 3){
-				R.at<float>(i,j) = 1;
-			}
-			else if(i == 3 || j == 3){
-				R.at<float>(i,j) = 0;
-			}
-			else{
-				R.at<float>(i,j) = tracking_cameras[1].R.at<float>(i,j);
-			}
-
-		}
-	}
-	clock_t c_end = clock();
-	double a = ((c_end-c_start)/(double)CLOCKS_PER_SEC);
-	double b = ((c_after_bundle-c_before_bundle)/(double)CLOCKS_PER_SEC);
-	double c = ((c_after_matcher-c_before_matcher)/(double)CLOCKS_PER_SEC);
-	double d = ((c_after_desc-c_before_desc)/(double)CLOCKS_PER_SEC);
-	double e = ((c_before_desc-c_start)/(double)CLOCKS_PER_SEC);
-
-
-	__android_log_print(ANDROID_LOG_DEBUG,"C++ aligning"," Timer [ All : %lf Prepare : %lf Desc : %lf Matcher : %lf  Bundle : %lf ]",a,e,d,c,b);
-
-//
-// 	Mat K;
-//	tracking_cameras[1].K().convertTo(K,CV_32F);
-
-// 	H = K * tracking_cameras[1].R * K.inv();
-	//return only R no-need for homography
-//	H = tracking_cameras[1].R;
-
-
-//
-//	vector<Point2f> in_point;
-//	vector<Point2f> in2_point;
-//	__android_log_print(ANDROID_LOG_DEBUG,"MatchCount","%d",matches.size());
-//	int viewport[4] = {0,0,GL_WIDTH,GL_HEIGHT};
-//	Mat& gl_proj = *(Mat*) glprojaddr;
-//
-//
-//	for(int i = 0 ; i < matches.size() ;i++){
-//		float screenCoord[3];
-//		Point2f xy1 = input_keypoint[matches[i].queryIdx].pt;
-//		xy1.x /= tracking_scale;
-//		xy1.y /= tracking_scale;
-//		//const descriptor (img1)
-//		Point2f xy2 = p2d[1][matches[i].trainIdx];
-//
-//
-//		__android_log_print(ANDROID_LOG_DEBUG,"MatchPoint2D","(%f,%f) (%f,%f)",xy1.x,xy1.y,xy2.x,xy2.y);
-//		Point3f xyz2 = p3d[1][matches[i].trainIdx];
-//		__android_log_print(ANDROID_LOG_DEBUG,"MatchPoint3DRaw","%f %f %f",xyz2.x,xyz2.y,xyz2.z);
-//		glhProjectf(xyz2.x,xyz2.y,xyz2.z,(float*)gl_rot.data,(float*)gl_proj.data,viewport,screenCoord);
-//		if(screenCoord[0] > 0 && screenCoord[0] < GL_WIDTH && screenCoord[1] > 0 && screenCoord[1] < GL_HEIGHT){
-//			__android_log_print(ANDROID_LOG_ERROR,"MatchPoint3DComProjt","(%f %f) (%f %f)",screenCoord[0],GL_HEIGHT-screenCoord[1],xy1.x,xy1.y);
-//			in_point.push_back(xy1);
-//			in2_point.push_back(Point2f(screenCoord[0],GL_HEIGHT-screenCoord[1]));
-//		}
-//	}
-//
-//    vector<uchar> inliners;
-//
-//	Mat tmp = findHomography(in_point,in2_point,inliners,CV_RANSAC);
-//
-//	tmp.convertTo(H,CV_32F);
-//	CameraParams camera;
-//	camera.aspect = 1;//??? change to 1(1920/1080??=1.77)
-//	camera.focal = (dst.size().width * 4.7 / focal_divider) * work_scale/seam_scale;
-//	Mat K;
-//    camera.K().convertTo(K,CV_32F);
-//    Mat R = K.inv() * H.inv() * K;
-//	printMatrix(H,"H_MAT");
-//	printMatrix(R,"R_MAT");
-//	vector<Point2f> src_points;
-//	vector<Point2f> dst_points;
-//	int inlier_idx = 0;
-//	for(int i = 0 ; i < inliners.size() ; i++){
-//		if(!inliners[i])
-//			continue;
-//		Point2f p1 = in_point[i];
-//		Point2f p2 = in2_point[i];
-//		src_points.push_back(p1);
-//		dst_points.push_back(p2);
-//		__android_log_print(ANDROID_LOG_ERROR,"MatchPoint3DFF","(%f %f) (%f %f)",p1.x,p1.y,p2.x,p2.y);
-//		inlier_idx++;
-//	}
-//	tmp = findHomography(src_points,dst_points,CV_RANSAC);
-//	tmp.convertTo(H,CV_32F);
-//	printMatrix(H.inv(),"H");
-//	R = K.inv() * H.inv() * K;
-//	printMatrix(R,"R_MAT");
-//	//minimizeRotation(){}
-//	vector<CameraParams> camera_homo(2);
-//	for(int i = 0 ; i < 2; i++){
-//		CameraParams c;
-//		c.aspect = 1;//??? change to 1(1920/1080??=1.77)
-//		c.focal = (dst.size().width * 4.7 / focal_divider) * work_scale/seam_scale;
-//		c.ppx = 1080/2.0;
-//		c.ppy = 1080/2.0;
-//		if(i == 0){
-//
-//			c.R = Mat::eye(3,3,CV_32F);
-//		}
-//		else{
-//			c.R = R;
-//		}
-//
-//		camera_homo[i] = c;
-//	}
-//	minimizeRotation(src_points,dst_points,camera_homo);
-//	printMatrix(camera_homo[0].R,"R_adjust0");
-//	printMatrix(camera_homo[1].R,"R_adjusted");
-//	//another choice doingbundle on H
-//	H = K * R * K.inv();
-//	printMatrix(H,"H2_MAT");
-
-
-}
 //may won't work need check
 void warpFeature(float warped_image_scale ,vector<CameraParams> cameras,vector<ImageFeatures> features,vector<vector<Point3f>> &out3p){
 	float track_work_aspect = tracking_scale/ work_scale;
@@ -563,6 +323,7 @@ vector<Rect> findROI(float warped_image_scale,std::vector<ImagePackage> p_img){
 			warpped_borders[i].at<Point3_<uchar>>(0, counter) = p_img[i].full_image.at<Point3_<uchar>>(0, x);
 			counter++;
 		}
+		__android_log_print(ANDROID_LOG_DEBUG,"C++ FindROI","1");
 		for(int x = 0 ; x < p_img[i].full_image.rows;x++) {
 		//right
 			vec[0] = p_img[i].full_image.cols-1;
@@ -579,6 +340,8 @@ vector<Rect> findROI(float warped_image_scale,std::vector<ImagePackage> p_img){
 			warpped_borders[i].at<Point3_<uchar>>(0, counter) = p_img[i].full_image.at<Point3_<uchar>>(p_img[i].full_image.cols-1, x);
 			counter++;
 		}
+
+		__android_log_print(ANDROID_LOG_DEBUG,"C++ FindROI","2");
 		for(int y = 0 ; y< p_img[i].full_image.cols ;y++) {
 			//top
 			vec[0] = y;
@@ -597,6 +360,8 @@ vector<Rect> findROI(float warped_image_scale,std::vector<ImagePackage> p_img){
 			warpped_borders[i].at<Point3_<uchar>>(0, counter) = p_img[i].full_image.at<Point3_<uchar>>(y, 0);
 			counter++;
 		}
+
+		__android_log_print(ANDROID_LOG_DEBUG,"C++ FindROI","3");
 		for(int y = 0 ; y< p_img[i].full_image.cols ;y++) {
 			//bottom
 			vec[0] = y;
@@ -613,6 +378,8 @@ vector<Rect> findROI(float warped_image_scale,std::vector<ImagePackage> p_img){
 			warpped_borders[i].at<Point3_<uchar>>(0, counter) = p_img[i].full_image.at<Point3_<uchar>>(y, p_img[i].full_image.rows-1);
 			counter++;
 		}
+
+		__android_log_print(ANDROID_LOG_DEBUG,"C++ FindROI","4");
 
 		__android_log_print(ANDROID_LOG_DEBUG,"C++ FindROI","%f %f %f %f",tl_x,tl_y,br_x,br_y);
 		rois.push_back(Rect(Point(tl_x,tl_y),Point(br_x,br_y)));
@@ -882,8 +649,6 @@ JNIEXPORT jint JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativ
 		__android_log_print(ANDROID_LOG_DEBUG,"C++ Stitching","matched_inliners_size_original : %d",pairwise_matches[matched_index].num_inliers);
 
 		Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create("BruteForce-Hamming");
-		pairwise_matches[0].src_img_idx = nearest_image;
-		pairwise_matches[0].dst_img_idx = images.size() - 1;
 		vector<vector<DMatch>> matched_descriptors;
 		Mat desc1,desc2;
 
@@ -893,8 +658,14 @@ JNIEXPORT jint JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativ
 		__android_log_print(ANDROID_LOG_DEBUG,"C++ Stitching","Test2");
 		vector<DMatch> matched_pair;
 		vector<KeyPoint> matched1,matched2;
-		Mat homo_test;
-		pairwise_matches[matched_index].H.convertTo(homo_test,CV_32F);
+		Mat homography;
+		//pairwise_matches[matched_index].H.convertTo(homography,CV_32F);
+		Mat K;
+		images[nearest_image].param.K().convertTo(K,CV_32F);
+		K.at<float>(0,2) = K.at<float>(1,2) = 0;
+		printMatrix(K,"Ktest");
+
+		homography = K * images[images.size()-1].param.R.inv() * images[nearest_image].param.R * K.inv();
 		for(int i = 0 ; i < matched_descriptors.size();i++){
 			DMatch first = matched_descriptors[i][0];
 			float dist1 = matched_descriptors[i][0].distance;
@@ -909,28 +680,41 @@ JNIEXPORT jint JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativ
 
 		__android_log_print(ANDROID_LOG_DEBUG,"C++ Stitching","Test3");
 		vector<uchar> matched_inliners(matched1.size());
+		printMatrix(homography,"Homography");
 		for(int i = 0; i < matched1.size() ;i++){
 			Mat col = Mat::ones(3,1,CV_32F);
 			col.at<float>(0) = matched1[i].pt.x;
 			col.at<float>(1) = matched1[i].pt.y;
-			col = homo_test * col;
+			col = homography * col;
 			//col = homography * col;
 			col /= col.at<float>(2);
-			double dist = sqrt( col.at<double>(0) - matched2[i].pt.x * col.at<double>(0) - matched2[i].pt.x + col.at<double>(1) - matched2[i].pt.y * col.at<double>(1) - matched2[i].pt.y);
+
+			float dist = sqrt( ((col.at<float>(0) - matched2[i].pt.x ) * ( col.at<float>(0) - matched2[i].pt.x)) + ((col.at<float>(1) - matched2[i].pt.y ) * (col.at<float>(1) - matched2[i].pt.y)));
+
 			//?
-			if(dist < 2.5f){
+			__android_log_print(ANDROID_LOG_DEBUG,"C++ Stitching","matched data dist %f",dist);
+			if(dist < 80){
 				matched_inliners[i] = true;
 			}
 			else{
 				matched_inliners[i] = false;
 			}
 		}
+		int matched_inliner_size = 0;
+		for(int i = 0;  i < matched_inliners.size() ;i++){
+			if(matched_inliners[i] == true){
+				matched_inliner_size+=1;
+			}
+		}
 
 		__android_log_print(ANDROID_LOG_DEBUG,"C++ Stitching","Test4");
-		pairwise_matches[0].inliers_mask = matched_inliners;
-		pairwise_matches[0].num_inliers = matched_inliners.size();
-		pairwise_matches[0].matches = matched_pair;
-		__android_log_print(ANDROID_LOG_DEBUG,"C++ Stitching","matched_inliners_size : %d",matched_inliners.size());
+		__android_log_print(ANDROID_LOG_DEBUG,"C++ Stitching","matched_inliners_original_compare %d %d",pairwise_matches[matched_index].inliers_mask.size(),pairwise_matches[matched_index].num_inliers);
+		//pairwise_matches[matched_index].inliers_mask = matched_inliners;
+		//pairwise_matches[matched_index].num_inliers = matched_inliner_size;
+
+		//pairwise_matches[matched_index].matches = matched_pair;
+
+		__android_log_print(ANDROID_LOG_DEBUG,"C++ Stitching","matched_inliners_size : %d %d",matched_inliners.size(),matched_inliner_size);
 
 
 		__android_log_print(ANDROID_LOG_DEBUG, "C++ Stitching", "2");
@@ -974,7 +758,7 @@ JNIEXPORT jint JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativ
 			pairwise_matches[i].dst_img_idx == images.size() - 1) {
 			//__android_log_print(ANDROID_LOG_INFO,"C++ Stitching","Nearest Pair %d %d %d",pairwise_matches[i].src_img_idx
 			//		,pairwise_matches[i].dst_img_idx,pairwise_matches[i].matches.size());
-			if (pairwise_matches[i].inliers_mask.size() < 15) {
+			if (pairwise_matches[i].num_inliers < 15) {
 				//return
 				__android_log_print(ANDROID_LOG_WARN, "C++ Stitching",
 									"Stitch Rejected < 15 matches point..");

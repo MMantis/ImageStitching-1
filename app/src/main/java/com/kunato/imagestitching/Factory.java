@@ -32,10 +32,5 @@ public class Factory {
         }
         return mImageStitchingNative;
     }
-    public RSProcessor getRSProcessor(RenderScript rs,Size dimension){
-        if(mRSProcessor == null){
-            mRSProcessor = new RSProcessor(rs,dimension,mainController);
-        }
-        return mRSProcessor;
-    }
+
 }

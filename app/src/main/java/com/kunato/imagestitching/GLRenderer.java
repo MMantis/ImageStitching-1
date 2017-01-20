@@ -59,6 +59,8 @@ public class GLRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
     public float[] mHomography = {1,0,0,0,1,0,0,0,1};
     private boolean readInProgress = false;
     private StitchObject mStitch;
+    private CanvasObject mCanvasObjectRS;
+    private SurfaceTexture mTextureRS;
 
     GLRenderer(MainController view) {
         mView = view;
@@ -86,13 +88,14 @@ public class GLRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
         mStitch = new StitchObject(this);
         mCanvasObject = new CanvasObject(vertices,textures, mView.getActivity());
         mCanvasObjectProcessed = new CanvasObject(vertices,textures,mView.getActivity());
-
+        mCanvasObjectRS = new CanvasObject(vertices, textures, mView.getActivity());
 
         mTextureNormal = new SurfaceTexture (mCanvasObject.getTexturePos()[0]);
         mTextureProcessed = new SurfaceTexture(mCanvasObjectProcessed.getTexturePos()[0]);
         mTextureNormal.setOnFrameAvailableListener(this);
         mTextureProcessed.setOnFrameAvailableListener(this);
-
+        mTextureRS = new SurfaceTexture( mCanvasObjectRS.getTexturePos()[0]);
+        mTextureRS.setOnFrameAvailableListener(this);
         GLES31.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         //(x (vertical),(horizontal)y,z)
         GLES31.glEnable(GLES31.GL_BLEND);
@@ -238,6 +241,7 @@ public class GLRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
     public SurfaceTexture getSurfaceTexture(){
         return mTextureNormal;
     }
+    public SurfaceTexture getRSTexture(){ return mTextureRS; }
     public SurfaceTexture getProcessSurfaceTexture() {
         return mTextureProcessed;
     }

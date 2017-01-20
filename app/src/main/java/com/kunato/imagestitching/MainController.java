@@ -26,6 +26,7 @@ import android.opengl.Matrix;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.renderscript.RenderScript;
 import android.support.v4.view.VelocityTrackerCompat;
 import android.util.Log;
 import android.util.Range;
@@ -51,6 +52,7 @@ import java.util.concurrent.TimeUnit;
 import static android.hardware.camera2.CameraCharacteristics.*;
 
 public class MainController extends GLSurfaceView {
+    private final RenderScript mRS;
     private Activity mActivity;
     static {
         System.loadLibrary("native");
@@ -106,90 +108,89 @@ public class MainController extends GLSurfaceView {
     public float[] mDeltaQuaternion = new float[4];
     private boolean mRecordQuaternion = false;
     public int mNumPicture = 0;
+    public Mat mFrame;
 
     private float[] lastQuaternion = new float[4];
-    private final ImageReader.OnImageAvailableListener mOnImageAvailableListener = new ImageReader.OnImageAvailableListener() {
-
-        @Override
-        public void onImageAvailable(ImageReader reader) {
-            Image image = reader.acquireNextImage();
-            if(!mAsyncRunning && mRunning){
-                mAsyncRunning = true;
-                mRunning = false;
-                Log.d("ImageReader","Start!");
-                //Note10.1
-//                Log.d("ImageReader","length : "+planes.length);
-//                Image.Plane Y = image.getPlanes()[0];
-//                Image.Plane U = image.getPlanes()[1];
-//                Image.Plane V = image.getPlanes()[2];
-//                byte[] yBytes = new byte[Y.getBuffer().remaining()];
-//                Y.getBuffer().rewind();
-//                Y.getBuffer().get(yBytes);
-//                byte[] uBytes = new byte[U.getBuffer().remaining()];
-//                U.getBuffer().rewind();
-//                U.getBuffer().get(uBytes);
-//                byte[] vBytes = new byte[V.getBuffer().remaining()];
-//                V.getBuffer().rewind();
-//                V.getBuffer().get(vBytes);
+//    private final ImageReader.OnImageAvailableListener mOnImageAvailableListener = new ImageReader.OnImageAvailableListener() {
 //
-//                int Yb = Y.getBuffer().remaining();
-//                int Ub = U.getBuffer().remaining();
-//                int Vb = V.getBuffer().remaining();
-//                if(mFrameByte == null) {
-//                    mFrameByte = new byte[Yb + Ub + Vb];
-//                }
-//                Y.getBuffer().get(mFrameByte, 0, Yb);
-//                U.getBuffer().get(mFrameByte, Yb, Ub);
-//                V.getBuffer().get(mFrameByte, Yb+ Ub, Vb);
-
-                //Nexus5x
-                mFrameByte = Util.readImage(image);
-
-                doStitching();
-            }
-            else if(mAlign){
-                mAlign = false;
-                Log.d("ImageReader","Align Start!");
-                //Note10.1
-//                Log.d("ImageReader","length : "+planes.length);
-//                Image.Plane Y = image.getPlanes()[0];
-//                Image.Plane U = image.getPlanes()[1];
-//                Image.Plane V = image.getPlanes()[2];
+//        @Override
+//        public void onImageAvailable(ImageReader reader) {
+//            Image image = reader.acquireNextImage();
+//            if(!mAsyncRunning && mRunning){
+//                mAsyncRunning = true;
+//                mRunning = false;
+//                Log.d("ImageReader","Start!");
+//                //Note10.1
+////                Log.d("ImageReader","length : "+planes.length);
+////                Image.Plane Y = image.getPlanes()[0];
+////                Image.Plane U = image.getPlanes()[1];
+////                Image.Plane V = image.getPlanes()[2];
+////                byte[] yBytes = new byte[Y.getBuffer().remaining()];
+////                Y.getBuffer().rewind();
+////                Y.getBuffer().get(yBytes);
+////                byte[] uBytes = new byte[U.getBuffer().remaining()];
+////                U.getBuffer().rewind();
+////                U.getBuffer().get(uBytes);
+////                byte[] vBytes = new byte[V.getBuffer().remaining()];
+////                V.getBuffer().rewind();
+////                V.getBuffer().get(vBytes);
+////
+////                int Yb = Y.getBuffer().remaining();
+////                int Ub = U.getBuffer().remaining();
+////                int Vb = V.getBuffer().remaining();
+////                if(mFrameByte == null) {
+////                    mFrameByte = new byte[Yb + Ub + Vb];
+////                }
+////                Y.getBuffer().get(mFrameByte, 0, Yb);
+////                U.getBuffer().get(mFrameByte, Yb, Ub);
+////                V.getBuffer().get(mFrameByte, Yb+ Ub, Vb);
 //
-//                int Yb = Y.getBuffer().remaining();
-//                int Ub = U.getBuffer().remaining();
-//                int Vb = V.getBuffer().remaining();
-//                if(mFrameByte == null)
-//                    mFrameByte = new byte[Yb + Ub + Vb];
+//                //Nexus5x
+//                mFrameByte = Util.readImage(image);
 //
-//                Y.getBuffer().get(mFrameByte, 0, Yb);
-//                U.getBuffer().get(mFrameByte, Yb, Ub);
-//                V.getBuffer().get(mFrameByte, Yb+ Ub, Vb);
-
-                //Nexus5x
-                mFrameByte = Util.readImage(image);
-                doAlign();
-            }
-            image.close();
-
+//                doStitching();
+//            }
+//            else if(mAlign){
+//                mAlign = false;
+//                Log.d("ImageReader","Align Start!");
+//                //Note10.1
+////                Log.d("ImageReader","length : "+planes.length);
+////                Image.Plane Y = image.getPlanes()[0];
+////                Image.Plane U = image.getPlanes()[1];
+////                Image.Plane V = image.getPlanes()[2];
+////
+////                int Yb = Y.getBuffer().remaining();
+////                int Ub = U.getBuffer().remaining();
+////                int Vb = V.getBuffer().remaining();
+////                if(mFrameByte == null)
+////                    mFrameByte = new byte[Yb + Ub + Vb];
+////
+////                Y.getBuffer().get(mFrameByte, 0, Yb);
+////                U.getBuffer().get(mFrameByte, Yb, Ub);
+////                V.getBuffer().get(mFrameByte, Yb+ Ub, Vb);
+//
+//                //Nexus5x
+//                mFrameByte = Util.readImage(image);
+//                doAlign();
+//            }
+//            image.close();
+//
+//        }
+//
+//    };
+    public void requestStitch(){
+        if(!mAsyncRunning && mRunning){
+            mAsyncRunning = true;
+            mRunning = false;
+            Log.d("DoStitch","Start!");
+            doStitching();
         }
-
-    };
-
-
-
-
-
-    public void requireAlign(){
-        mAlign = true;
     }
 
 
+    private RSProcessor mProcessor;
 
-    private void doAlign() {
-        AsyncTask<Mat, Integer, Boolean> aligningTask = new ImageAligningTask();
-        aligningTask.execute();
-    }
+
 
 
 
@@ -229,7 +230,7 @@ public class MainController extends GLSurfaceView {
 
     private HandlerThread mBackgroundThread;
     private Handler mBackgroundHandler;
-    private ImageReader mImageReader;
+//    private ImageReader mImageReader;
     private CaptureRequest.Builder mPreviewRequestBuilder;
     private Semaphore mCameraOpenCloseLock = new Semaphore(1);
     private SensorListener mSensorListener;
@@ -247,6 +248,7 @@ public class MainController extends GLSurfaceView {
         mFactory = Factory.getFactory(this);
         mActivity = (Activity) context;
         mGLRenderer = mFactory.getGlRenderer();
+        mRS = RenderScript.create(context);
         setEGLContextClientVersion(3);
         setEGLConfigChooser(8,8,8,8,16,8);
         setRenderer(mGLRenderer);
@@ -413,16 +415,16 @@ public class MainController extends GLSurfaceView {
                 //Note10.1
 //                mImageReader = ImageReader.newInstance(mReadSize.getWidth(), mReadSize.getHeight(), ImageFormat.YV12, 1);
                 //Nexus5x
-                mImageReader = ImageReader.newInstance(mReadSize.getWidth(), mReadSize.getHeight(), ImageFormat.YUV_420_888,1);
+//                mImageReader = ImageReader.newInstance(mReadSize.getWidth(), mReadSize.getHeight(), ImageFormat.YUV_420_888,1);
 
-                mImageReader.setOnImageAvailableListener(mOnImageAvailableListener, mBackgroundHandler);
+//                mImageReader.setOnImageAvailableListener(mOnImageAvailableListener, mBackgroundHandler);
 
                 StreamConfigurationMap configs = characteristics.get(
                         CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
                 Log.d("CameraParam","Support OutputSizes"+Arrays.toString(configs.getOutputSizes(ImageReader.class)));
                 Log.d("CameraParam","CaptureResultKey :"+Arrays.toString(characteristics.getAvailableCaptureRequestKeys().toArray()));
 
-                Log.d("CameraParam","Support : "+configs.isOutputSupportedFor(ImageReader.class)+","+configs.isOutputSupportedFor(mImageReader.getSurface()));
+//                Log.d("CameraParam","Support : "+configs.isOutputSupportedFor(ImageReader.class)+","+configs.isOutputSupportedFor(mImageReader.getSurface()));
                 Log.d("CameraParam","Format : "+Arrays.toString(configs.getOutputFormats()));
                 Log.d("CameraParam","Size : "+Arrays.toString(configs.getOutputSizes(ImageFormat.YV12)));
 
@@ -456,10 +458,10 @@ public class MainController extends GLSurfaceView {
                 mCameraDevice.close();
                 mCameraDevice = null;
             }
-            if (mImageReader != null) {
-                mImageReader.close();
-                mImageReader = null;
-            }
+//            if (mImageReader != null) {
+//                mImageReader.close();
+//                mImageReader = null;
+//            }
         } catch (InterruptedException e) {
             throw new RuntimeException("Interrupted while trying to lock camera closing.", e);
         } finally {
@@ -492,7 +494,7 @@ public class MainController extends GLSurfaceView {
             Log.d("CameraCharacteristic", "createCameraPreviewSession");
 
             SurfaceTexture glProcessTexture = mGLRenderer.getProcessSurfaceTexture();
-
+            SurfaceTexture glRSTexture = mGLRenderer.getRSTexture();
             if (glProcessTexture == null){
                 try {
                     Thread.sleep(1000);
@@ -503,12 +505,16 @@ public class MainController extends GLSurfaceView {
                     e.printStackTrace();
                 }
             }
+            glRSTexture.setDefaultBufferSize(mPreviewSize.getWidth(),mPreviewSize.getHeight());
             glProcessTexture.setDefaultBufferSize(mPreviewSize.getWidth(),mPreviewSize.getHeight());
             Surface mGLProcessSurface = new Surface(glProcessTexture);
+            Surface RSOutputSurface = new Surface(glRSTexture);
+            mProcessor = new RSProcessor(mRS,new Size(mReadSize.getWidth(),mReadSize.getHeight()),this,RSOutputSurface);
 
             List<Surface> surfaceList = new ArrayList<>();
-            surfaceList.add(mImageReader.getSurface());
+//            surfaceList.add(mImageReader.getSurface());
             surfaceList.add(mGLProcessSurface);
+            surfaceList.add(mProcessor.getInputSurface());
 
             mCameraDevice.createCaptureSession(surfaceList,
                     new CameraCaptureSession.StateCallback() {
@@ -649,11 +655,7 @@ public class MainController extends GLSurfaceView {
     private class ImageStitchingTask extends AsyncTask<Mat, Integer, Boolean> {
         protected Boolean doInBackground(Mat... objects) {
             Log.d("AsyncTask","doInBackground");
-            Mat yv12 = new Mat(mReadSize.getHeight()*3/2, mReadSize.getWidth(), CvType.CV_8UC1);
-            yv12.put(0, 0, mFrameByte);
-            Mat rgb = new Mat(mReadSize.getWidth(), mReadSize.getHeight(),CvType.CV_8UC3);
-            Imgproc.cvtColor(yv12, rgb, mConvertType,3);
-            Imgcodecs.imwrite("/sdcard/stitch/test.jpg",rgb);
+
             Thread uiThread = new Thread() {
 
                 @Override
@@ -669,7 +671,8 @@ public class MainController extends GLSurfaceView {
                 }
             };
             uiThread.start();
-            int rtCode = ImageStitchingNative.getNativeInstance().addToPano(rgb, (Mat) objects[0] ,mNumPicture);
+            Imgcodecs.imwrite("/sdcard/stitch/in.jpeg",mFrame);
+            int rtCode = ImageStitchingNative.getNativeInstance().addToPano(mFrame, (Mat) objects[0] ,mNumPicture);
             if(rtCode == 1){
                 mNumPicture++;
             }
@@ -703,30 +706,6 @@ public class MainController extends GLSurfaceView {
         }
     }
 
-
-    private class ImageAligningTask extends AsyncTask<Mat, Integer, Boolean> {
-        protected Boolean doInBackground(Mat... objects) {
-            Log.d("AsyncTask","doInBackground");
-            Mat yv12 = new Mat(mReadSize.getHeight()*3/2, mReadSize.getWidth(), CvType.CV_8UC1);
-            yv12.put(0, 0, mFrameByte);
-            Mat rgb = new Mat(mReadSize.getWidth(), mReadSize.getHeight(),CvType.CV_8UC3);
-            Imgproc.cvtColor(yv12, rgb, mConvertType,3);
-            float[] rotMat = new float[16];
-            SensorManager.getRotationMatrixFromVector(rotMat, mQuaternion);
-            ImageStitchingNative.getNativeInstance().aligning(rgb,rotMat);
-            return true;
-        }
-
-        protected void onProgressUpdate(Integer... progress) {
-
-        }
-
-        protected void onPostExecute(Boolean bool) {
-
-            Log.i("GLSurface Connector","Algin Complete.");
-
-        }
-    }
 
 
 }
