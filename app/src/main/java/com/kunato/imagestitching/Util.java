@@ -377,13 +377,14 @@ public class Util {
 
 //        float width = 1440;
 //        float height = 1080;
+        //add *1.4
         //Nexus5x
-        float[] K = {1469.7969239257427f*1.4f,0,497.82610894280418f*1.4f,
-                0,1469.7969239257427f*1.4f,923.84763460447925f*1.4f,
+        float[] K = {1469.7969239257427f,0,497.82610894280418f,
+                0,1469.7969239257427f,923.84763460447925f,
                 0,0,1};
-
-        float width = 1080*1.4f;
-        float height = 1920*1.4f;
+        //add *1.4
+        float width = 1080;
+        float height = 1920;
 
 
         float[] output = new float[16];

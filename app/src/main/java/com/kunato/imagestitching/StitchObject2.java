@@ -360,7 +360,7 @@ public class StitchObject2 {
         sizes = sof;
     }
     public int getFBOTexture(){
-        return mFBOTex;
+        return mSFBOTex;
     }
 
     public void drawTOFBO() {
