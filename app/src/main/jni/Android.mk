@@ -25,6 +25,7 @@ LOCAL_C_INCLUDES :=				\
 LOCAL_SRC_FILES :=				\
 	stitching.h					\
 	stitching.cpp               \
+	tracking.cpp                \
 	BundleCeres.h               \
 	BundleCeres.cpp				\
 	composer.h					\

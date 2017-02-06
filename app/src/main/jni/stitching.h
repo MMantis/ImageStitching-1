@@ -42,6 +42,7 @@ int blend_type = Blender::NO;
 #define TAG "NATIVE_DEBUG"
 cv::FileStorage debug("/sdcard/stitch/debug.yml", cv::FileStorage::WRITE);
 
+
 struct ImagePackage{
     String name;
     Mat image;
@@ -60,6 +61,9 @@ struct ImagePackage{
     CameraParams param;
     Mat feature_desc;
 };
+
+
+
 float focal_divider = 3.45;
 //Note10.1
 //float camera_focal_x=1425.559961560,camera_focal_y=1425.559961560,camera_ppx=745.027494,camera_ppy=436.7257419;
@@ -75,7 +79,7 @@ vector<vector<Point3f>> p3d;
 
 //No need to re-done
 //Ptr<Feature2D> detector = xfeatures2d::SIFT::create();
-Ptr<Feature2D> detector = AKAZE::create();
+Ptr<Feature2D> detector = ORB::create(100);
 int detector_setup = 1;
 extern "C" {
 
@@ -89,7 +93,7 @@ void tracking(jlong imgaddr,jlong glrotaddr,jlong glprojaddr,jlong retaddr);
 int findNearest(int from,int to,std::vector<ImagePackage> images,Mat &inputR);
 void findDescriptor(Mat img,std::vector<KeyPoint> &keypoints ,UMat &descriptor);
 vector<Rect> findROI(float warped_image_scale, std::vector<ImagePackage> images);
-inline void vectorMatrixMultiply(float vec[],float matrix[], float *out );
+
 inline Point3f calc3DPosition(Point2f keyPoint,float multiply_aspect);
 inline int glhProjectf(float objx, float objy, float objz, float *modelview, float *projection, int *viewport, float *windowCoordinate);
 inline float calcDistance(float x1,float y1, float z1,float x2,float y2,float z2);

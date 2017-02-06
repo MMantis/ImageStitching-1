@@ -58,7 +58,8 @@ public class GLRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
     public int mHeight;
     public float[] mHomography = {1,0,0,0,1,0,0,0,1};
     private boolean readInProgress = false;
-    private StitchObject mStitch;
+    private StitchObject2 mStitch;
+
     private CanvasObject mCanvasObjectRS;
     private SurfaceTexture mTextureRS;
 
@@ -76,16 +77,22 @@ public class GLRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
 //                -CANVAS_SIZE, -CANVAS_SIZE * HEIGHT_WIDTH_RATIO, -1.0f,
 //                CANVAS_SIZE, CANVAS_SIZE * HEIGHT_WIDTH_RATIO, -1.0f,
 //                CANVAS_SIZE, -CANVAS_SIZE * HEIGHT_WIDTH_RATIO, -1.0f};
+        //Pixel
+//        float[] vertices = {CANVAS_SIZE, CANVAS_SIZE * HEIGHT_WIDTH_RATIO, -1.0f,
+//                -CANVAS_SIZE, CANVAS_SIZE * HEIGHT_WIDTH_RATIO, -1.0f,
+//                CANVAS_SIZE, -CANVAS_SIZE * HEIGHT_WIDTH_RATIO, -1.0f,
+//                -CANVAS_SIZE, -CANVAS_SIZE * HEIGHT_WIDTH_RATIO, -1.0f};
         //Nexus5x
-        float[] vertices = {CANVAS_SIZE, CANVAS_SIZE * HEIGHT_WIDTH_RATIO, -1.0f,
-                -CANVAS_SIZE, CANVAS_SIZE * HEIGHT_WIDTH_RATIO, -1.0f,
+        float[] vertices = {-CANVAS_SIZE, -CANVAS_SIZE * HEIGHT_WIDTH_RATIO, -1.0f,
                 CANVAS_SIZE, -CANVAS_SIZE * HEIGHT_WIDTH_RATIO, -1.0f,
-                -CANVAS_SIZE, -CANVAS_SIZE * HEIGHT_WIDTH_RATIO, -1.0f};
+                -CANVAS_SIZE, CANVAS_SIZE * HEIGHT_WIDTH_RATIO, -1.0f,
+                CANVAS_SIZE, CANVAS_SIZE * HEIGHT_WIDTH_RATIO, -1.0f};
+
         float[] textures = {0.0f, 0.0f,
                 0.0f, 1.0f,
                 1.0f, 0.0f,
                 1.0f, 1.0f};
-        mStitch = new StitchObject(this);
+        mStitch = new StitchObject2(this);
         mCanvasObject = new CanvasObject(vertices,textures, mView.getActivity());
         mCanvasObjectProcessed = new CanvasObject(vertices,textures,mView.getActivity());
         mCanvasObjectRS = new CanvasObject(vertices, textures, mView.getActivity());
@@ -245,6 +252,6 @@ public class GLRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
     public SurfaceTexture getProcessSurfaceTexture() {
         return mTextureProcessed;
     }
-    public StitchObject getStitch() { return mStitch; }
+    public StitchObject2 getStitch() { return mStitch; }
 
 }

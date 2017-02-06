@@ -45,7 +45,6 @@
 #pragma ide diagnostic ignored "ArrayIssue"
 #define EXPERIMENT 0
 #define MINIMIZE
-#define DEBUG
 #include "stitching.h"
 
 using namespace std;
@@ -323,7 +322,7 @@ vector<Rect> findROI(float warped_image_scale,std::vector<ImagePackage> p_img){
 			warpped_borders[i].at<Point3_<uchar>>(0, counter) = p_img[i].full_image.at<Point3_<uchar>>(0, x);
 			counter++;
 		}
-		__android_log_print(ANDROID_LOG_DEBUG,"C++ FindROI","1");
+		__android_log_print(ANDROID_LOG_DEBUG,"C++ FindROI","1 sizey %d",p_img[i].full_image.rows);
 		for(int x = 0 ; x < p_img[i].full_image.rows;x++) {
 		//right
 			vec[0] = p_img[i].full_image.cols-1;
@@ -341,7 +340,7 @@ vector<Rect> findROI(float warped_image_scale,std::vector<ImagePackage> p_img){
 			counter++;
 		}
 
-		__android_log_print(ANDROID_LOG_DEBUG,"C++ FindROI","2");
+		__android_log_print(ANDROID_LOG_DEBUG,"C++ FindROI","2 , size %d",p_img[i].full_image.total());
 		for(int y = 0 ; y< p_img[i].full_image.cols ;y++) {
 			//top
 			vec[0] = y;
@@ -357,11 +356,12 @@ vector<Rect> findROI(float warped_image_scale,std::vector<ImagePackage> p_img){
 			if (v < tl_y) tl_y = v;
 			if (u > br_x) br_x = u;
 			if (v > br_y) br_y = v;
+
 			warpped_borders[i].at<Point3_<uchar>>(0, counter) = p_img[i].full_image.at<Point3_<uchar>>(y, 0);
 			counter++;
 		}
 
-		__android_log_print(ANDROID_LOG_DEBUG,"C++ FindROI","3");
+		__android_log_print(ANDROID_LOG_DEBUG,"C++ FindROI","3 , sizey %d",p_img[i].full_image.cols);
 		for(int y = 0 ; y< p_img[i].full_image.cols ;y++) {
 			//bottom
 			vec[0] = y;
@@ -1040,7 +1040,7 @@ JNIEXPORT int JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_native
 	if(min_acos_z > 0.3){
 		return 1;
 	}
-	return 0;
+	return 1;
 }
 
 

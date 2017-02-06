@@ -91,7 +91,8 @@ public class MainController extends GLSurfaceView {
     //Note10.1 = 1080,1440
 //    private Size mReadSize = new Size(1080,1440);
 //    private Size mReadSize = new Size(1920,1080);
-    private Size mReadSize = new Size(2688,1512);
+//    private Size mReadSize = new Size(2688,1512);
+    private Size mCalcSize = new Size(640,360);
     private Size mPreviewSize = new Size(1920,1080);
     private int mConvertType = Imgproc.COLOR_YUV2BGR_I420;
 //    private int mConvertType = Imgproc.COLOR_YUV2BGR_NV12;
@@ -99,7 +100,7 @@ public class MainController extends GLSurfaceView {
     private int mLastSensorISO;
     private long mLastShutterSpeed;
     private boolean mAEReport = false;
-    public byte[] mFrameByte;
+//    public byte[] mFrameByte;
     public boolean mAsyncRunning = false;
     public boolean mAlign = false;
     public boolean mRunning = false;
@@ -337,6 +338,7 @@ public class MainController extends GLSurfaceView {
             });
 
         }
+
         Mat rotationCVMat = new Mat();
         rotationCVMat.create(3, 3, CvType.CV_32F);
         for (int i = 0; i < 3; i++) {
@@ -345,6 +347,7 @@ public class MainController extends GLSurfaceView {
 //                rotationCVMat.put(i, j, Util.UP180[i * 3 + j]);
             }
         }
+        Log.d("Java Stitch","RotMat"+Arrays.toString(mRotmat));
         imageStitchingTask.execute(rotationCVMat);
     }
 
@@ -421,7 +424,8 @@ public class MainController extends GLSurfaceView {
 
                 StreamConfigurationMap configs = characteristics.get(
                         CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-                Log.d("CameraParam","Support OutputSizes"+Arrays.toString(configs.getOutputSizes(ImageReader.class)));
+                Log.d("CameraParam","Support OutputFormats "+Arrays.toString(configs.getOutputFormats()));
+                Log.d("CameraParam","Support OutputSizes "+Arrays.toString(configs.getOutputSizes(35)));
                 Log.d("CameraParam","CaptureResultKey :"+Arrays.toString(characteristics.getAvailableCaptureRequestKeys().toArray()));
 
 //                Log.d("CameraParam","Support : "+configs.isOutputSupportedFor(ImageReader.class)+","+configs.isOutputSupportedFor(mImageReader.getSurface()));
@@ -482,6 +486,7 @@ public class MainController extends GLSurfaceView {
             mBackgroundThread.join();
             mBackgroundThread = null;
             mBackgroundHandler = null;
+            mProcessor.stopProcess();
         } catch (InterruptedException | NullPointerException e) {
             e.printStackTrace();
             mBackgroundThread = null;
@@ -508,8 +513,7 @@ public class MainController extends GLSurfaceView {
             glRSTexture.setDefaultBufferSize(mPreviewSize.getWidth(),mPreviewSize.getHeight());
             glProcessTexture.setDefaultBufferSize(mPreviewSize.getWidth(),mPreviewSize.getHeight());
             Surface mGLProcessSurface = new Surface(glProcessTexture);
-            Surface RSOutputSurface = new Surface(glRSTexture);
-            mProcessor = new RSProcessor(mRS,new Size(mReadSize.getWidth(),mReadSize.getHeight()),this,RSOutputSurface);
+            mProcessor = new RSProcessor(mRS,new Size(mPreviewSize.getWidth(),mPreviewSize.getHeight()),this);
 
             List<Surface> surfaceList = new ArrayList<>();
 //            surfaceList.add(mImageReader.getSurface());
@@ -671,7 +675,6 @@ public class MainController extends GLSurfaceView {
                 }
             };
             uiThread.start();
-            Imgcodecs.imwrite("/sdcard/stitch/in.jpeg",mFrame);
             int rtCode = ImageStitchingNative.getNativeInstance().addToPano(mFrame, (Mat) objects[0] ,mNumPicture);
             if(rtCode == 1){
                 mNumPicture++;

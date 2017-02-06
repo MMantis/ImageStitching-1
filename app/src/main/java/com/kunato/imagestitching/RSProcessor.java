@@ -42,7 +42,7 @@ import org.opencv.imgproc.Imgproc;
  */
 public class RSProcessor {
 
-    private final Bitmap bitmap;
+    private Bitmap bitmap;
     private Allocation mInputAllocation;
     private Allocation mOutputAllocation;
     private Size mDimension;
@@ -53,7 +53,7 @@ public class RSProcessor {
     private MainController mController;
     private ScriptIntrinsicYuvToRGB intrinsic;
     private byte[] readbytes;
-    public RSProcessor(RenderScript rs, Size dimensions, MainController controller, Surface surface) {
+    public RSProcessor(RenderScript rs, Size dimensions, MainController controller) {
         mController = controller;
         mDimension = dimensions;
         Type.Builder yuvTypeBuilder = new Type.Builder(rs, Element.YUV(rs));
@@ -66,9 +66,8 @@ public class RSProcessor {
         rgbTypeBuilder.setX(dimensions.getWidth());
         rgbTypeBuilder.setY(dimensions.getHeight());
         mOutputAllocation = Allocation.createTyped(rs, rgbTypeBuilder.create(),
-                Allocation.USAGE_IO_OUTPUT | Allocation.USAGE_SCRIPT);
-        mOutputAllocation.setSurface(surface);
-        bitmap = Bitmap.createBitmap(dimensions.getWidth(), dimensions.getHeight(), Bitmap.Config.ARGB_8888);
+                Allocation.USAGE_SCRIPT);
+
 //        mOutputAllocation = Allocation.createTyped(rs,mInputAllocation.getType());
         mProcessingThread = new HandlerThread("ViewfinderProcessor");
         mProcessingThread.start();
@@ -78,10 +77,25 @@ public class RSProcessor {
 //        intrinsic.forEach(mOutputAllocation);
 //        mOutputAllocation.copyTo(bitmap);
 //        mergeScript = new ScriptC_processing(rs);
-        mInputAllocation.setOnBufferAvailableListener(new BufferListener());
-//        mTask = new ProcessingTask(mInputAllocation);
+//        mInputAllocation.setOnBufferAvailableListener(new BufferListener());
+        mTask = new ProcessingTask(mInputAllocation);
         Log.d("RS","RS Processor init");
 
+    }
+    public void stopProcess(){
+        try {
+
+            mProcessingThread.quitSafely();
+            mProcessingThread.join();
+
+            mProcessingHandler = null;
+            mProcessingThread = null;
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            mProcessingHandler = null;
+            mProcessingThread = null;
+
+        }
     }
     public Surface getInputSurface() {
         return mInputAllocation.getSurface();
@@ -89,45 +103,7 @@ public class RSProcessor {
     public void setOutputSurface(Surface surface){
         mOutputAllocation.setSurface(surface);
     }
-    class OutBufferListener implements  Allocation.OnBufferAvailableListener{
 
-        private boolean write = true;
-
-        @Override
-        public void onBufferAvailable(Allocation allocation) {
-
-            //WORK
-            if(write) {
-
-                Log.d("RS", "Write Mat");
-
-                write = false;
-            }
-            mController.requestStitch();
-        }
-
-    }
-    class BufferListener implements  Allocation.OnBufferAvailableListener {
-
-        @Override
-        public void onBufferAvailable(Allocation allocation) {
-            Log.d("RS", "Received Buffer");
-            mInputAllocation.ioReceive();
-            intrinsic.setInput(mInputAllocation);
-            intrinsic.forEach(mOutputAllocation);
-            mOutputAllocation.copyTo(bitmap);
-            mOutputAllocation.ioSend();
-            Log.d("RS","Output");
-            if(mController.mFrame == null)
-                mController.mFrame = new Mat(mDimension.getWidth(), mDimension.getHeight() ,CvType.CV_8UC4);
-            Utils.bitmapToMat(bitmap,mController.mFrame);
-//            Imgcodecs.imwrite("/sdcard/stitch/rs.jpeg", mat);
-            if (mController.mFrameByte == null){
-                mController.mFrameByte = new byte[mDimension.getWidth() * mDimension.getHeight() * ImageFormat.getBitsPerPixel(ImageFormat.FLEX_RGBA_8888) / 8];
-             }
-            mController.requestStitch();
-        }
-    }
     /**
      * Simple class to keep track of incoming frame count,
      * and to process the newest one in the processing thread
@@ -169,11 +145,25 @@ public class RSProcessor {
             for (int i = 0; i < pendingFrames; i++) {
                 mInputAllocation.ioReceive();
             }
-            mergeScript.set_gCurrentFrame(mInputAllocation);
+            Log.d("RS", "Received Buffer");
+            bitmap = Bitmap.createBitmap(mDimension.getWidth(), mDimension.getHeight(), Bitmap.Config.ARGB_8888);
 
+            mInputAllocation.ioReceive();
+//            mergeScript.set_gCurrentFrame(mInputAllocation);
+            intrinsic.setInput(mInputAllocation);
+            intrinsic.forEach(mOutputAllocation);
+            mOutputAllocation.copyTo(bitmap);
+            Log.d("RS","Bitmap Size:"+bitmap.getWidth()+","+bitmap.getHeight());
+            if(mController.mFrame == null)
+                mController.mFrame = new Mat();
+
+            Utils.bitmapToMat(bitmap,mController.mFrame);
+            mController.requestStitch();
+            bitmap.recycle();
+            Log.d("RS", "Output");
             // Run processing pass
-            mergeScript.forEach_convertFrames(mOutputAllocation);
-            mOutputAllocation.ioSend();
+//            mergeScript.forEach_convertFrames(mOutputAllocation);
+//            mOutputAllocation.ioSend();
 
             //WORK
 //            if (write && mFrameByte != null) {

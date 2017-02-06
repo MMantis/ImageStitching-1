@@ -118,7 +118,7 @@ struct BaseErrorOneVector {
         double *diff_array = diff.data();
         ceres::RotationMatrixToQuaternion(diff_array,diff_quat);
         double angle = 2 * asin(diff_quat[3]);
-        __android_log_print(ANDROID_LOG_DEBUG,"Ceres Minimize","Diff Angle [%lf]",angle*180.0/M_PI);
+        //__android_log_print(ANDROID_LOG_DEBUG,"Ceres Minimize","Diff Angle [%lf]",angle*180.0/M_PI);
 
         double multiplier = 200 - (200 * (log(num_point)/log(50)));
         if(multiplier > 0){
@@ -135,7 +135,7 @@ struct BaseErrorOneVector {
             residuals[0] = 100000000000 * abs(angle);
         else if(mode == 1)
             residuals[0] = 0;
-        __android_log_print(ANDROID_LOG_DEBUG,"Ceres Minimize","Bases Residuals : %lf",residuals[0]);
+        //__android_log_print(ANDROID_LOG_DEBUG,"Ceres Minimize","Bases Residuals : %lf",residuals[0]);
         return true;
     }
     // Factory to hide the construction of the CostFunction object from
@@ -402,8 +402,8 @@ int minimizeRotation(vector<Point2f> src,vector<Point2f> dst,vector<CameraParams
         problem.AddResidualBlock(cost_func,NULL,
                 rotation_pointer + rpSet[i].matches_image_idx[1]*3);
     }
-    ceres::CostFunction* cost_func = BaseErrorOneVector::Create(rotation_pointer + rpSet[0].matches_image_idx[0]*3,rotation_pointer + rpSet[0].matches_image_idx[1]*3,rpSet.size(),mode);
-    problem.AddResidualBlock(cost_func,NULL, rotation_pointer + rpSet[0].matches_image_idx[1]*3);
+    //ceres::CostFunction* cost_func = BaseErrorOneVector::Create(rotation_pointer + rpSet[0].matches_image_idx[0]*3,rotation_pointer + rpSet[0].matches_image_idx[1]*3,rpSet.size(),mode);
+    //problem.AddResidualBlock(cost_func,NULL, rotation_pointer + rpSet[0].matches_image_idx[1]*3);
     ceres::Solver::Options options;
     options.linear_solver_type = ceres::DENSE_SCHUR;
     options.minimizer_progress_to_stdout = true;
