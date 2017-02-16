@@ -112,7 +112,9 @@ public class MainController extends GLSurfaceView {
     public Mat mFrame;
 
     private float[] lastQuaternion = new float[4];
-//    private final ImageReader.OnImageAvailableListener mOnImageAvailableListener = new ImageReader.OnImageAvailableListener() {
+    private static final boolean mUsingAllFrame = true;
+
+    //    private final ImageReader.OnImageAvailableListener mOnImageAvailableListener = new ImageReader.OnImageAvailableListener() {
 //
 //        @Override
 //        public void onImageAvailable(ImageReader reader) {
@@ -638,7 +640,7 @@ public class MainController extends GLSurfaceView {
                         float axisZ = event.values[2];
                         float omegaMagnitude = (axisX * axisX + axisY * axisY + axisZ * axisZ);
                         //Log.d("SensorListener","Gyro Magnitude : "+omegaMagnitude);
-                        if (omegaMagnitude < 0.01) {
+                        if (mUsingAllFrame || omegaMagnitude < 0.01) {
                             if (ImageStitchingNative.getNativeInstance().keyFrameSelection(rotMat) == 1) {
                                 mRunning = true;
                             }

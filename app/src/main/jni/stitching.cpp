@@ -1038,9 +1038,9 @@ JNIEXPORT int JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_native
 	//__android_log_print(ANDROID_LOG_INFO,"Z_diff","%lf",min_acos_z*180/M_PI);
 
 	if(min_acos_z > 0.3){
-		return 0;
+		return 1;
 	}
-	return 0;
+	return 1;
 }
 
 

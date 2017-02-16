@@ -33,7 +33,9 @@ LOCAL_SRC_FILES :=				\
 	util.h						\
 	util.cpp					\
 	matcher.h					\
-	matcher.cpp
+	matcher.cpp                 \
+	BundleCV.h                  \
+	BundleCV.cpp
 
 LOCAL_MODULE := native
 LOCAL_SHARED_LIBRARIES += nonfree

@@ -4,7 +4,15 @@
 
 #include <opencv2/imgproc.hpp>
 #include <opencv2/video.hpp>
+#include <opencv2/calib3d.hpp>
+
+#include <opencv2/stitching/detail/camera.hpp>
+#include <opencv2/stitching/detail/matchers.hpp>
+#include <opencv2/stitching/detail/util.hpp>
+#include <opencv2/stitching/detail/motion_estimators.hpp>
 #include "util.h"
+using namespace cv::detail;
+
 Mat multiply(Mat a,Mat b){
     int m = a.cols;
     int y = b.cols;
@@ -20,6 +28,12 @@ Mat multiply(Mat a,Mat b){
         }
     }
     return out;
+}
+
+void calcDeriv(const Mat &err1, const Mat &err2, double h, Mat res)
+{
+    for (int i = 0; i < err1.rows; ++i)
+        res.at<double>(i, 0) = (err2.at<double>(i, 0) - err1.at<double>(i, 0)) / h;
 }
 
 //TODO Fix sigmentation fault
@@ -118,11 +132,12 @@ getRTMatrix( const Point2f* a, const Point2f* b,
 
 cv::Mat estimateRigidTransform( InputArray src1, InputArray src2, bool fullAffine ,vector<uchar> &ransac )
 {
+    __android_log_print(ANDROID_LOG_DEBUG,"C++ Tracking","Modified RANSAC");
     Mat M(2, 3, CV_64F), A = src1.getMat(), B = src2.getMat();
 
     const int COUNT = 15;
     const int WIDTH = 160, HEIGHT = 120;
-    const int RANSAC_MAX_ITERS = 500;
+    const int RANSAC_MAX_ITERS = 50000;
     const int RANSAC_SIZE0 = 3;
     const double RANSAC_GOOD_RATIO = 0.5;
 
@@ -306,11 +321,14 @@ cv::Mat estimateRigidTransform( InputArray src1, InputArray src2, bool fullAffin
             break;
     }
 
-    if( k >= RANSAC_MAX_ITERS )
+    if( k >= RANSAC_MAX_ITERS ) {
+        __android_log_print(ANDROID_LOG_DEBUG,"C++ Tracking","RANSAC FAILED");
         return Mat();
-
-    if( good_count < count )
+    }
+    __android_log_print(ANDROID_LOG_DEBUG,"C++ Tracking","RANSAC Good Size %d from %d",good_count,count);
+    if( good_count <= count )
     {
+        __android_log_print(ANDROID_LOG_DEBUG,"C++ Tracking","RANSAC Assigned");
         ransac.assign(src1.total(),0);
         for( i = 0; i < good_count; i++ )
         {
@@ -325,7 +343,13 @@ cv::Mat estimateRigidTransform( InputArray src1, InputArray src2, bool fullAffin
     M.at<double>(0, 2) /= scale;
     M.at<double>(1, 2) /= scale;
 
+
     return M;
 }
+
+
+
+
+
 
 

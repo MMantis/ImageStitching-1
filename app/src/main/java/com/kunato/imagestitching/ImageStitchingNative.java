@@ -115,48 +115,56 @@ public class ImageStitchingNative {
         Mat area = new Mat(1,4,CvType.CV_32F);
         Mat refine = new Mat(4,4,CvType.CV_32F);
         Mat roi = new Mat(2,4,CvType.CV_32S);
-        Bitmap iBitmap = Bitmap.createBitmap(imageMat.cols(),imageMat.rows(),Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(imageMat,iBitmap);
-        Factory.getFactory(null).getGlRenderer().getStitch().bitmapToCPU(iBitmap,1);
         Mat k_rinv = new Mat();
         int rtCode = track(imageMat.getNativeObjAddr(),ret.getNativeObjAddr(),area.getNativeObjAddr(),rotMat.getNativeObjAddr(),refine.getNativeObjAddr(),roi.getNativeObjAddr(),k_rinv.getNativeObjAddr());
         Log.d("Java Stitch","RtCode : "+rtCode);
+        //First Image of the optical flow()
         if(rtCode == -1){
             return 1;
         }
-        if(rtCode != 1){
+        //Another error
+        if(rtCode != 1 && rtCode != 2){
             return rtCode;
         }
-        float[] areaFloat = new float[4];
-        area.get(0, 0, areaFloat);
+        else if(rtCode == 1) {
+            return 1;
+        }
+        else {
+            Bitmap iBitmap = Bitmap.createBitmap(imageMat.cols(), imageMat.rows(), Bitmap.Config.ARGB_8888);
+            Utils.matToBitmap(imageMat, iBitmap);
+            Factory.getFactory(null).getGlRenderer().getStitch().bitmapToCPU(iBitmap, 1);
+
+            float[] areaFloat = new float[4];
+            area.get(0, 0, areaFloat);
 
 
-        //areaFloat[0]+=0;
-        //areaFloat[1]-=150;
-        Log.d("Java Stitch", "Return Area [" + Arrays.toString(areaFloat)+"]");
+            //areaFloat[0]+=0;
+            //areaFloat[1]-=150;
+            Log.d("Java Stitch", "Return Area [" + Arrays.toString(areaFloat) + "]");
 
-        int[] roiData = new int[roi.rows()*roi.cols()];
-        float[] k_rinvData = new float[k_rinv.rows()*k_rinv.cols()];
-        roi.get(0, 0, roiData);
-        k_rinv.get(0,0,k_rinvData);
-        Log.d("Java Stitch", "ROI : "+Arrays.toString(roiData));
-        Log.d("Java Stitch", "K_RINV : "+Arrays.toString(k_rinvData));
+            int[] roiData = new int[roi.rows() * roi.cols()];
+            float[] k_rinvData = new float[k_rinv.rows() * k_rinv.cols()];
+            roi.get(0, 0, roiData);
+            k_rinv.get(0, 0, k_rinvData);
+            Log.d("Java Stitch", "ROI : " + Arrays.toString(roiData));
+            Log.d("Java Stitch", "K_RINV : " + Arrays.toString(k_rinvData));
 
-        //Send ROI to GPU
-        Factory.getFactory(null).getGlRenderer().getStitch().setROI(roiData,k_rinvData);
-        ///Placeholder
+            //Send ROI to GPU
+            Factory.getFactory(null).getGlRenderer().getStitch().setROI(roiData, k_rinvData);
+            ///Placeholder
 
-        float[] refinedMatArray = new float[16];
-        refine.get(0,0,refinedMatArray);
-        float[] refinedQuad = Util.matrixToQuad(refinedMatArray);
+            float[] refinedMatArray = new float[16];
+            refine.get(0, 0, refinedMatArray);
+            float[] refinedQuad = Util.matrixToQuad(refinedMatArray);
 //        Factory.mainController.updateQuaternion(refinedQuad,Factory.mainController.mDeltaQuaternion);
 
-        mBitmapArea = areaFloat;
-        Factory.getFactory(null).getGlRenderer().getSphere().updateArea(mBitmapArea);
+            mBitmapArea = areaFloat;
+            Factory.getFactory(null).getGlRenderer().getSphere().updateArea(mBitmapArea);
 
 
+            return 1;
 
-        return 1;
+        }
     }
 
     public void setContext(Context context){

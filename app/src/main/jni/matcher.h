@@ -79,6 +79,8 @@ namespace matcher {
     void match(const vector<ImageFeatures> &features, vector<MatchesInfo> &pairwise_matches,int newIndex);
     void match(const ImageFeatures &features1, const ImageFeatures &features2,
                MatchesInfo &matches_info);
+    void forceMatch(const ImageFeatures &features1, const ImageFeatures &features2,
+               MatchesInfo &matches_info);
     void collectGarbage();
     cv::Mat findHomography( InputArray _points1, InputArray _points2,
                             int method, double ransacReprojThreshold, OutputArray _mask );
