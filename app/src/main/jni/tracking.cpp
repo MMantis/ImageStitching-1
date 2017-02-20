@@ -203,6 +203,7 @@ Rect findROI(float warped_image_scale, Mat image ,CameraParams param, float proc
 
     return Rect(Point(tl_x,tl_y),Point(br_x,br_y));
 }
+
 extern "C" {
 vector<Point2f> trackedFeatures;
 bool firstImage = true;
@@ -215,11 +216,14 @@ Rect last_rect;
 int max_feature = 300;
 float processing_ratio = 1.0;
 vector<Point2f> main_points;
+bool stop = false;
 
 Ptr<FeatureDetector> tracking_dectector = GFTTDetector::create(max_feature,0.01,10,3);
 JNIEXPORT int JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_track(JNIEnv *env, jobject instance, jlong imgAddr, jlong retAddr, jlong areaAddr, jlong rotAddr, jlong refindRotAddr, jlong roiAddr, jlong k_rinvAddr) {
-
-
+    if(stop) {
+        __android_log_print(ANDROID_LOG_DEBUG,"C++ Tracking","STOP");
+        return 1;
+    }
     Mat& full_img = *(Mat*)imgAddr;
     Mat& rot = *(Mat*)rotAddr;
     Mat& refinedRot = *(Mat*)refindRotAddr;
@@ -308,7 +312,7 @@ JNIEXPORT int JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_track(
                             current_rect.x, current_rect.y, current_rect.width, current_rect.height);
 
         //* 3.0 for 1920*1080 (640*360 input)
-        area.at<float>(0, 0) = (work_width * 3.0 / 2) + current_rect.x;
+        area.at<float>(0, 0) = (work_width * processing_ratio / 2) + current_rect.x;
         area.at<float>(0, 1) = current_rect.y;
         area.at<float>(0, 2) = current_rect.width;
         area.at<float>(0, 3) = current_rect.height;
@@ -351,7 +355,7 @@ JNIEXPORT int JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_track(
 
         trackedFeatures = updated_valid_points;
         tracking_points = update_tracking_points;
-        if(valid_feature < max_feature * 0.8) {
+        if(valid_feature < max_feature * 0.9) {
 
             vector<Point2f> good_original_valid_points;
             vector<Point2f> good_updated_valid_points;
@@ -456,9 +460,8 @@ JNIEXPORT int JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_track(
             //printMatrix(rot, "original Rotation");
             //printMatrix(camera_set[1].R, "updated Rotation");
 
-            float warped_image_scale = currentCamera.focal;
+            float warped_image_scale = 1453.8f;
             Rect current_rect = findROI(warped_image_scale, gray, camera_set[1], processing_ratio);
-
 
             __android_log_print(ANDROID_LOG_DEBUG, "C++ Tracking",
                                 "C.Rect tl(%d:%d) size[%d:%d]", current_rect.x, current_rect.y,
@@ -498,7 +501,7 @@ JNIEXPORT int JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_track(
             roiRot.at<int>(1, 3) = current_rect.height;
             __android_log_print(ANDROID_LOG_DEBUG, "C++ Tracking", "ROI 1 : %d %d %d %d",
                                 rects[1].x, rects[1].y, rects[1].width, rects[1].height);
-
+            __android_log_print(ANDROID_LOG_DEBUG, "C++ Tracking","Work-Width : %d",work_width);
 
             for (int i = 0; i < 4; i++) {
                 for (int j = 0; j < 4; j++) {
@@ -522,7 +525,8 @@ JNIEXPORT int JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_track(
                                 last_rect.x, last_rect.y, last_rect.width, last_rect.height);
 
             //* 3.0 for 1920*1080 (640*360 input)
-            area.at<float>(0, 0) = (work_width * 3.0 / 2) + last_rect.x;
+
+            area.at<float>(0, 0) = (work_width * processing_ratio / 2) + last_rect.x;
             area.at<float>(0, 1) = last_rect.y;
             area.at<float>(0, 2) = last_rect.width;
             area.at<float>(0, 3) = last_rect.height;
@@ -549,6 +553,7 @@ JNIEXPORT int JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_track(
             gray.copyTo(last_image);
             gray.copyTo(main_image);
             image_size++;
+//            stop = true;
             return 2;
 
         }

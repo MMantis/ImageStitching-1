@@ -369,7 +369,7 @@ public class Util {
         [          0,             0, (-zfar - znear)/(zfar - znear), -2*zfar*znear/(zfar - znear)]
         [          0,             0,                             -1,                            0]
      */
-    public static float[] glProjectionMatrix(){
+    public static float[] glProjectionMatrix(float focal){
         //Note10.1
 //        float[] K = {1425.559961560f,0,745.027494f,
 //                0,1425.559961560f,436.7257419f,
@@ -379,9 +379,9 @@ public class Util {
 //        float height = 1080;
         //add *1.4
         //Nexus5x
-        float[] K = {1453.8f,0,507.1f,
-                0,1453.8f,957.2f,
-                0,0,1};
+        float[] K = {focal,0,540f,
+                    0,focal,960f,
+                    0,0,1};
         //add *1.4
         float width = 1080;
         float height = 1920;
@@ -410,6 +410,7 @@ public class Util {
         output[14] = (-2*zfar*znear/(zfar - znear));
         return output;
     }
+
     public static byte[] readImage(Image image){
         Image.Plane[] planes = image.getPlanes();
         int width = image.getWidth();

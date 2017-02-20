@@ -216,11 +216,14 @@ public class GLRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
         //65 default
         //Matrix.perspectiveM(mProjectionMatrix, 0, 50 / ZOOM_RATIO, ratio, 0.1f, 1000f);//48 for 4/3 64 for 1920/1080
 
-        mProjectionMatrix = Util.glProjectionMatrix();
+
+    }
+    public void setProjectionMatrix(float focal){
+
+        mProjectionMatrix = Util.glProjectionMatrix(focal);
         for(int i = 0 ; i < mProjectionMatrix.length ;i++){
             Log.d("Matrix",""+mProjectionMatrix[i]);
         }
-
     }
     public void setHomography(float[] input){
         mHomography = input;

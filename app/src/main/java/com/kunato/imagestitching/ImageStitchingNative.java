@@ -151,8 +151,9 @@ public class ImageStitchingNative {
 
             //Send ROI to GPU
             Factory.getFactory(null).getGlRenderer().getStitch().setROI(roiData, k_rinvData);
-            ///Placeholder
+            Factory.getFactory(null).getGlRenderer().setProjectionMatrix(1453.8f);
 
+            //Placeholder
             float[] refinedMatArray = new float[16];
             refine.get(0, 0, refinedMatArray);
             float[] refinedQuad = Util.matrixToQuad(refinedMatArray);
@@ -160,7 +161,6 @@ public class ImageStitchingNative {
 
             mBitmapArea = areaFloat;
             Factory.getFactory(null).getGlRenderer().getSphere().updateArea(mBitmapArea);
-
 
             return 1;
 

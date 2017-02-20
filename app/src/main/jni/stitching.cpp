@@ -1040,7 +1040,7 @@ JNIEXPORT int JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_native
 	if(min_acos_z > 0.3){
 		return 1;
 	}
-	return 1;
+	return 1.;
 }
 
 

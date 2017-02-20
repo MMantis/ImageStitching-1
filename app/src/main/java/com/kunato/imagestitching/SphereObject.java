@@ -37,32 +37,31 @@ import java.util.Arrays;
 public class SphereObject {
 
     private final String vertexShaderCode =
+            "#version 310 es\n" +
             "uniform mat4 uViewMatrix;" +
                     "uniform mat4 uProjectionMatrix;" +
-                    "attribute vec4 vPosition;" +
-                    "attribute vec4 vColor;"+
-                    "attribute vec2 a_TexCoordinate;"+
-                    "varying vec4 vPosition2;" +
-                    "varying vec4 fragmentColor;"+
-                    "varying vec2 v_TexCoordinate;"+
+                    "in vec4 vPosition;" +
+                    "in vec2 a_TexCoordinate;"+
+                    "vec4 vPosition2;" +
+                    "out vec2 v_TexCoordinate;"+
                     "void main() {" +
                     "  vPosition2 = vec4 ( vPosition.x, vPosition.y, vPosition.z, 1 );"+
                     "  gl_Position = uProjectionMatrix * uViewMatrix * vPosition2;" +
-                    "  fragmentColor = vColor;"+
                     "  v_TexCoordinate = a_TexCoordinate;"+
                     "}";
 
     private final String fragmentShaderCode =
+            "#version 310 es\n" +
             "precision highp float;" +
             "uniform sampler2D sTexture;"+
-            "varying vec2 v_TexCoordinate;"+
-            "varying vec4 fragmentColor;" +
+            "in vec2 v_TexCoordinate;"+
+            "out vec4 gl_FragColor;" +
                     "//Note10.1\n" +
                     "//float width_ratio = 8976.0;\n" +
                     "//float height_ratio = 4488.0;\n" +
                     "//Nexus5x\n" +
-                    "float width_ratio = 9242.0;\n" +
-                    "float height_ratio = 4620.0;\n" +
+                    "float width_ratio = 9134.0;\n" +
+                    "float height_ratio = 4567.0;\n" +
                     "uniform float img_x;" +
                     "uniform float img_y;" +
                     "uniform float img_width;" +
@@ -73,12 +72,11 @@ public class SphereObject {
                     "   gl_FragColor = vec4(0,0,0,0);" +
                     "   return;" +
                     "}" +
-                    "float diff_x = (((v_TexCoordinate.x*width_ratio) - (img_x))/(img_width));" +
-                    "float diff_y = (((v_TexCoordinate.y*height_ratio) - (img_y))/(img_height));" +
-                    "vec4 color = texture2D(sTexture,vec2(diff_x,diff_y));" +
+                    "ivec2 coord = ivec2(((v_TexCoordinate.x*width_ratio) - img_x),((v_TexCoordinate.y*height_ratio) - img_y));" +
+                    "vec4 color  = texelFetch(sTexture ,coord,0);" +
                     "if(color.a > 0.0){" +
                     "   gl_FragColor.rgb = color.rgb;\n" +
-                    "   gl_FragColor.a = alpha;\n" +
+                    "   gl_FragColor.a = 1.0;\n" +
                     "}" +
 
             "}";
@@ -109,6 +107,9 @@ public class SphereObject {
     private int mWidth;
     private int mHeight;
     public float[] mArea = {0,0,0,0};
+    private float[] mNextArea;
+    private boolean mAreaNeedUpdate = false;
+    public boolean mReadyToUpdate = false;
     public SphereObject(GLRenderer renderer,int width,int height) {
         mWidth = width;
         mHeight = height;
@@ -198,10 +199,17 @@ public class SphereObject {
     }
 
     public void updateArea(float[] area){
-        this.mArea = area;
+
+        mNextArea = area;
+        mAreaNeedUpdate = true;
     }
 
     public void draw(float[] viewMatrix,float[] projectionMatrix,float alpha) {
+        if(mAreaNeedUpdate && mReadyToUpdate){
+            mArea = mNextArea;
+            mAreaNeedUpdate = false;
+            mReadyToUpdate = false;
+        }
         int xh = GLES31.glGetUniformLocation(mProgram,"img_x");
         int yh = GLES31.glGetUniformLocation(mProgram,"img_y");
         int widthh = GLES31.glGetUniformLocation(mProgram,"img_width");
@@ -291,7 +299,7 @@ public class SphereObject {
 //            Log.d("GLRenderer","BlackPixel :"+count);
             if(count > 0){
                 if(!glRenderer.mUsingOldMatrix == true){
-                    glRenderer.mUsingOldMatrix = true;
+                    //glRenderer.mUsingOldMatrix = true;
                 }
             }
             else{
