@@ -520,7 +520,7 @@ public class StitchObject2 {
             Imgcodecs.imwrite("/sdcard/stitch/stitchResult1.jpg", bgr);
         }
 
-        if(mCount >= 2) {
+        if(mCount == 2) {
             mScreenBuffer = ByteBuffer.allocateDirect(mHeight * mWidth * 4);
             mScreenBuffer.order(ByteOrder.nativeOrder());
             GLES31.glReadPixels(0, 0, mWidth, mHeight, GLES31.GL_RGBA, GLES31.GL_UNSIGNED_BYTE, mScreenBuffer);

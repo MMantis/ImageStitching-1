@@ -214,7 +214,7 @@ Mat last_image;
 Mat main_image;
 Rect last_rect;
 int max_feature = 300;
-float processing_ratio = 1.0;
+float processing_ratio = 4.0;
 vector<Point2f> main_points;
 bool stop = false;
 
@@ -353,7 +353,7 @@ JNIEXPORT int JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_track(
 
         trackedFeatures = updated_valid_points;
         tracking_points = update_tracking_points;
-        if(valid_feature < max_feature * 0.9) {
+        if(valid_feature < max_feature * 0.8) {
 
             vector<Point2f> good_original_valid_points;
             vector<Point2f> good_updated_valid_points;
@@ -460,7 +460,7 @@ JNIEXPORT int JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_track(
             //printMatrix(camera_set[1].R, "updated Rotation");
 
             float warped_image_scale = 1453.8f;
-            Rect current_rect = findROI(warped_image_scale, gray, camera_set[1], processing_ratio);
+            Rect current_rect = findROI(warped_image_scale/processing_ratio, gray, camera_set[1], processing_ratio);
 
             __android_log_print(ANDROID_LOG_DEBUG, "C++ Tracking",
                                 "C.Rect tl(%d:%d) size[%d:%d]", current_rect.x, current_rect.y,
@@ -525,7 +525,7 @@ JNIEXPORT int JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_track(
 
             //* 3.0 for 1920*1080 (640*360 input)
 
-            area.at<float>(0, 0) = (work_width * processing_ratio / 2) + last_rect.x;
+            area.at<float>(0, 0) = (work_width  / 2) + last_rect.x;
             area.at<float>(0, 1) = last_rect.y;
             area.at<float>(0, 2) = last_rect.width;
             area.at<float>(0, 3) = last_rect.height;
