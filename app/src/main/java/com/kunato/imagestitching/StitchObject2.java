@@ -121,7 +121,7 @@ public class StitchObject2 {
             "       ivec2 half_corner = ivec2(float(corner[0].x)/2.0,float(corner[0].y)/2.0);" +
             "       ivec2 diff = bpos + tl;" +
             "       vec3 map = mapBackward(vec3(diff.x,diff.y,1),SCALE,k_rinv[0]);\n" +
-            "       color = texelFetch(sTexture[1], ivec2(size[1].y - int(round(map.y)),size[1].x - int(round(map.x))),0);\n" +
+            "       color = texelFetch(sTexture[1], ivec2(int(round(map.y)),size[1].x - int(round(map.x))),0);\n" +
             "       if(color.a == 0.0){" +
             "           color = texelFetch(sTexture[0], ivec2(bpos2.x - corner[0].x ,bpos2.y - corner[0].y) ,0);\n" +
             "           " +
@@ -129,63 +129,26 @@ public class StitchObject2 {
             "       if(int(map.x) < 0 && int(map.x) >= size[1].x && int(map.y) < 0 && int(map.y) >= size[1].y ){" +
             "           color.a = 0.0;\n" +
             "       }" +
-            //ALPHA
-            "       else{" +
-            "           float blend_ratio = 1.0;\n" +
-            "           float blend_x = 1.0;\n" +
-            "           float blend_y = 1.0;\n" +
-            "           if(corner[1].x > corner[0].x){" +
-            "               if(map.x < WINDOW_SIZE){" +
-            "                   blend_x = map.x/WINDOW_SIZE;" +
-            "               }" +
-            "           }else{" +
-            "               if(map.x > (float(size[1].x) - WINDOW_SIZE)){" +
-            "                   blend_x = (float(size[1].x) - map.x)/WINDOW_SIZE;" +
-            "               }" +
-            "           }" +
-            "           if(corner[1].y > corner[0].y){" +
-            "               if(map.y < WINDOW_SIZE){" +
-            "                   blend_y = map.y/WINDOW_SIZE;" +
-            "               }" +
-            "           }" +
-            "           else{" +
-            "               if(map.y > (float(size[1].y) -  WINDOW_SIZE)){" +
-            "                   blend_y = (float(size[1].y) - map.y)/WINDOW_SIZE;" +
-            "               }" +
-            "           }" +
-            "           if(blend_x > blend_y){" +
-            "               blend_ratio = blend_y;" +
-            "           }" +
-            "           else{" +
-            "               blend_ratio = blend_x;" +
-            "           }" +
-            "           color *= blend_ratio;" +
-            "       }" +
-            //END OF ALPHA
-            "       if(color.a == 1.0 && length != 0){" +
-            "       //float grayScale = dot(color.rgb, vec3(0.299, 0.587, 0.114));\n" +
-            "       //color = vec4(grayScale,grayScale,grayScale,1.0);\n" +
-            "       }\n" +
-
             "   }\n" +
             "   return color;\n"+
             "}\n" +
             "void main() {\n" +
             "   int idx;" +
-            "   ivec2 pos = ivec2(gl_FragCoord.x,winSize.y - int(gl_FragCoord.y));" +
+            "   ivec2 pos = ivec2(gl_FragCoord.x,int(gl_FragCoord.y));" +
             "   vec4 color = vec4(0,0,0,0);" +
             "   for(int i = 1 ; i >= 0 ; i--){" +
             "       if(corner[i].x < pos.x && corner[i].x + size[i].x > pos.x && corner[i].y < pos.y && corner[i].y + size[i].y > pos.y){" +
-            "           ivec2 pos2 = ivec2(gl_FragCoord.x,gl_FragCoord.y);" +
+            "           ivec2 pos2 = ivec2(gl_FragCoord.x, int(gl_FragCoord.y));" +
             "           ivec2 diff = pos - corner[i];" +
             "           ivec2 diff2 = pos2 - corner[i];" +
 
-            "           if(length == 0){color = getSampleFromArray(i,pos,pos2,corner[i]);" +
-            "           }else" +
-            "           {" +
-            "           vec4 color_top = getSampleFromArray(i,pos,pos2,corner[i]);\n" +
-            "           color *= (1.0-color_top.a);\n" +
-            "           color += color_top;\n" +
+            "           if(length == 0){" +
+            "               color = getSampleFromArray(i,pos,pos2,corner[i]);\n" +
+            "           }else{" +
+            "               vec4 color_top = getSampleFromArray(i,pos,pos2,corner[i]);\n" +
+            "               color *= (1.0-color_top.a);\n" +
+            "               color += color_top;\n" +
+            "               //if(i == 1){color = vec4(1,1,0,1);}else{color = vec4(1,0,1,1);}\n" +
             "           }" +
             "       }" +
             "   }" +
@@ -483,6 +446,7 @@ public class StitchObject2 {
 
         Log.d("Stitch GPU","G_Corners : "+Arrays.toString(corners));
         Log.d("Stitch GPU","G_Sizes : "+Arrays.toString(sizes));
+        Log.d("Stitch GPU","G_WinSize : ("+mWidth+","+mHeight+")");
         Log.d("Stitch GPU","G_Length : "+mCount);
         Log.d("Stitch GPU","TexArray : "+Arrays.toString(texArray));
         Log.d("Stitch GPU","k_rinv : "+Arrays.toString(k_rinvData));
@@ -556,7 +520,7 @@ public class StitchObject2 {
             Imgcodecs.imwrite("/sdcard/stitch/stitchResult1.jpg", bgr);
         }
 
-        if(mCount == 2) {
+        if(mCount >= 2) {
             mScreenBuffer = ByteBuffer.allocateDirect(mHeight * mWidth * 4);
             mScreenBuffer.order(ByteOrder.nativeOrder());
             GLES31.glReadPixels(0, 0, mWidth, mHeight, GLES31.GL_RGBA, GLES31.GL_UNSIGNED_BYTE, mScreenBuffer);

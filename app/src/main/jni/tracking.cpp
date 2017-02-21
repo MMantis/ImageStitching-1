@@ -329,8 +329,6 @@ JNIEXPORT int JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_track(
         return 2;
 
     }
-
-
         //Optical flow on all frames
     else {
         vector<Point2f> valid_point;
@@ -437,7 +435,8 @@ JNIEXPORT int JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_track(
             //something wrong here
 //            int iterationCount = minimizeRotation(main_comparison_points, good_updated_valid_points, camera_set, 1);
             camera_set[1].R = rot;
-            estimate_(main_comparison_points,good_updated_valid_points, main_image.size(),camera_set);
+            estimate_(main_comparison_points,good_updated_valid_points, main_image.size(),camera_set,
+                      true);
 //            (*adjuster)(nearest_feature,pairwise_matches , camera_set);
             printMatrix(camera_set[0].K(),"Camera K_1");
             printMatrix(camera_set[1].K(),"Camera K_2");

@@ -221,7 +221,6 @@ public class SphereObject {
         int[] wh = new int[2];
         GLES31.glGetTexLevelParameteriv(GLES31.GL_TEXTURE_2D, 0, GLES31.GL_TEXTURE_WIDTH, wh, 0);
         GLES31.glGetTexLevelParameteriv(GLES31.GL_TEXTURE_2D, 0, GLES31.GL_TEXTURE_HEIGHT, wh, 1);
-        Log.d("GLSphere","Texture Sizes : "+Arrays.toString(wh));
         if(mTexRequireUpdate){
             Log.i("GLSphere", "Bitmap updated,Return to normal activity.");
             GLUtils.texImage2D(GLES31.GL_TEXTURE_2D, 0, mQueueBitmap, 0);

@@ -116,7 +116,6 @@ public class RSProcessor {
         public ProcessingTask(Allocation input) {
             mInputAllocation = input;
             mInputAllocation.setOnBufferAvailableListener(this);
-
             Log.d("RS", "processing task init");
         }
 
@@ -145,7 +144,6 @@ public class RSProcessor {
             for (int i = 0; i < pendingFrames; i++) {
                 mInputAllocation.ioReceive();
             }
-            Log.d("RS", "Received Buffer");
             bitmap = Bitmap.createBitmap(mDimension.getWidth(), mDimension.getHeight(), Bitmap.Config.ARGB_8888);
 
             mInputAllocation.ioReceive();
@@ -153,14 +151,12 @@ public class RSProcessor {
             intrinsic.setInput(mInputAllocation);
             intrinsic.forEach(mOutputAllocation);
             mOutputAllocation.copyTo(bitmap);
-            Log.d("RS","Bitmap Size:"+bitmap.getWidth()+","+bitmap.getHeight());
             if(mController.mFrame == null)
                 mController.mFrame = new Mat();
 
             Utils.bitmapToMat(bitmap,mController.mFrame);
             mController.requestStitch();
             bitmap.recycle();
-            Log.d("RS", "Output");
             // Run processing pass
 //            mergeScript.forEach_convertFrames(mOutputAllocation);
 //            mOutputAllocation.ioSend();

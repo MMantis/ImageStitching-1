@@ -23,15 +23,18 @@ vector<Point2f> dst_;
 
 Size size_;
 
+bool focal_estimate_;
+
 void setUpInitialCameraParams(const std::vector<CameraParams> &cameras)
 {
-    cam_params_.create(4, 1, CV_64F);
-    rot_params_.create(4, 1, CV_64F);
-    SVD svd;
-    cam_params_.at<double>(0, 0) = cameras[1].focal;
-    rot_params_.at<double>(0, 0) = cameras[0].focal;
-    for (int i = 0; i < 2; ++i) {
-           svd(cameras[i].R, SVD::FULL_UV);
+    if(focal_estimate_) {
+        cam_params_.create(4, 1, CV_64F);
+        rot_params_.create(4, 1, CV_64F);
+        SVD svd;
+        cam_params_.at<double>(0, 0) = cameras[1].focal;
+        rot_params_.at<double>(0, 0) = cameras[0].focal;
+        for (int i = 0; i < 2; ++i) {
+            svd(cameras[i].R, SVD::FULL_UV);
             Mat R = svd.u * svd.vt;
             if (determinant(R) < 0)
                 R *= -1;
@@ -39,39 +42,91 @@ void setUpInitialCameraParams(const std::vector<CameraParams> &cameras)
             Mat rvec;
             Rodrigues(R, rvec);
             CV_Assert(rvec.type() == CV_32F);
-            if(i == 1) {
+            if (i == 1) {
                 cam_params_.at<double>(1 + 0, 0) = rvec.at<float>(0, 0);
                 cam_params_.at<double>(1 + 1, 0) = rvec.at<float>(1, 0);
                 cam_params_.at<double>(1 + 2, 0) = rvec.at<float>(2, 0);
             }
-            if(i == 0){
+            if (i == 0) {
                 rot_params_.at<double>(1 + 0, 0) = rvec.at<float>(0, 0);
                 rot_params_.at<double>(1 + 1, 0) = rvec.at<float>(1, 0);
                 rot_params_.at<double>(1 + 2, 0) = rvec.at<float>(2, 0);
 
             }
+        }
+    }
+    else{
+        cam_params_.create(3, 1, CV_64F);
+        rot_params_.create(4, 1, CV_64F);
+        SVD svd;
+        rot_params_.at<double>(0, 0) = cameras[0].focal;
+        for (int i = 0; i < 2; ++i) {
+            svd(cameras[i].R, SVD::FULL_UV);
+            Mat R = svd.u * svd.vt;
+            if (determinant(R) < 0)
+                R *= -1;
+            Mat rvec;
+            Rodrigues(R, rvec);
+            CV_Assert(rvec.type() == CV_32F);
+            if (i == 1) {
+                cam_params_.at<double>(0, 0) = rvec.at<float>(0, 0);
+                cam_params_.at<double>(1, 0) = rvec.at<float>(1, 0);
+                cam_params_.at<double>(2, 0) = rvec.at<float>(2, 0);
+            }
+            if (i == 0) {
+                rot_params_.at<double>(1 + 0, 0) = rvec.at<float>(0, 0);
+                rot_params_.at<double>(1 + 1, 0) = rvec.at<float>(1, 0);
+                rot_params_.at<double>(1 + 2, 0) = rvec.at<float>(2, 0);
+
+            }
+        }
     }
 }
 
 
 void obtainRefinedCameraParams(std::vector<CameraParams> &cameras)
 {
-    cameras[1].focal = cam_params_.at<double>(0, 0);
+    if(focal_estimate_) {
+        cameras[1].focal = cam_params_.at<double>(0, 0);
 
-    __android_log_print(ANDROID_LOG_DEBUG, "C++ BundleCV", "focal %d : %lf",0, cameras[0].focal);
-    __android_log_print(ANDROID_LOG_DEBUG, "C++ BundleCV", "focal %d : %lf",1, cameras[1].focal);
+        __android_log_print(ANDROID_LOG_DEBUG, "C++ BundleCV", "focal %d : %lf", 0,
+                            cameras[0].focal);
+        __android_log_print(ANDROID_LOG_DEBUG, "C++ BundleCV", "focal %d : %lf", 1,
+                            cameras[1].focal);
 
-    for (int i = 0; i < 1; ++i) {
-        Mat rvec(3, 1, CV_64F);
-        rvec.at<double>(0, 0) = cam_params_.at<double>(1+i * 3 + 0, 0);
-        rvec.at<double>(1, 0) = cam_params_.at<double>(1+i * 3 + 1, 0);
-        rvec.at<double>(2, 0) = cam_params_.at<double>(1+i * 3 + 2, 0);
-        Rodrigues(rvec, cameras[i].R);
+        for (int i = 0; i < 1; ++i) {
+            Mat rvec(3, 1, CV_64F);
+            rvec.at<double>(0, 0) = cam_params_.at<double>(1 + i * 3 + 0, 0);
+            rvec.at<double>(1, 0) = cam_params_.at<double>(1 + i * 3 + 1, 0);
+            rvec.at<double>(2, 0) = cam_params_.at<double>(1 + i * 3 + 2, 0);
+            Rodrigues(rvec, cameras[i].R);
 
-        Mat tmp;
-        cameras[1].R.convertTo(tmp, CV_32F);
-        cameras[1].R = tmp;
+            Mat tmp;
+            cameras[1].R.convertTo(tmp, CV_32F);
+            cameras[1].R = tmp;
 
+        }
+    }
+    else{
+        cameras[1].focal = rot_params_.at<double>(0, 0);
+
+        __android_log_print(ANDROID_LOG_DEBUG, "C++ BundleCV", "focal %d : %lf", 0,
+                            cameras[0].focal);
+        __android_log_print(ANDROID_LOG_DEBUG, "C++ BundleCV", "focal %d : %lf", 1,
+                            cameras[1].focal);
+
+        for (int i = 0; i < 1; ++i) {
+            Mat rvec(3, 1, CV_64F);
+            rvec.at<double>(0, 0) = cam_params_.at<double>(0, 0);
+            rvec.at<double>(1, 0) = cam_params_.at<double>(1, 0);
+            rvec.at<double>(2, 0) = cam_params_.at<double>(2, 0);
+            Rodrigues(rvec, cameras[i].R);
+
+            Mat tmp;
+            cameras[1].R.convertTo(tmp, CV_32F);
+            cameras[1].R = tmp;
+
+        }
     }
 }
 
@@ -142,32 +197,51 @@ void calcError(Mat &err)
 
 void calcJacobian(Mat &jac)
 {
-    jac.create(total_num_matches_ * 3, 4, CV_64F);
+    if(focal_estimate_) {
+        jac.create(total_num_matches_ * 3, 4, CV_64F);
 
-    double val;
-    const double step = 1e-3;
+        double val;
+        const double step = 1e-3;
 
-    for (int i = 0; i < 4; ++i)
-    {
-        val = cam_params_.at<double>(i, 0);
-        cam_params_.at<double>(i, 0) = val - step;
-        calcError(err1_);
-        cam_params_.at<double>(i, 0) = val + step;
-        calcError(err2_);
-        calcDeriv(err1_, err2_, 2 * step, jac.col(i));
-        cam_params_.at<double>(i, 0) = val;
+        for (int i = 0; i < 4; ++i) {
+            val = cam_params_.at<double>(i, 0);
+            cam_params_.at<double>(i, 0) = val - step;
+            calcError(err1_);
+            cam_params_.at<double>(i, 0) = val + step;
+            calcError(err2_);
+            calcDeriv(err1_, err2_, 2 * step, jac.col(i));
+            cam_params_.at<double>(i, 0) = val;
 
 
+        }
+    }else{
+        jac.create(total_num_matches_ * 3, 3, CV_64F);
+
+        double val;
+        const double step = 1e-3;
+
+        for (int i = 0; i < 3; ++i) {
+            val = cam_params_.at<double>(i, 0);
+            cam_params_.at<double>(i, 0) = val - step;
+            calcError(err1_);
+            cam_params_.at<double>(i, 0) = val + step;
+            calcError(err2_);
+            calcDeriv(err1_, err2_, 2 * step, jac.col(i));
+            cam_params_.at<double>(i, 0) = val;
+
+
+        }
     }
 }
 
 
 bool estimate_(vector<Point2f> src,vector<Point2f> dst,Size size,
-               std::vector<CameraParams> &cameras)
+               std::vector<CameraParams> &cameras, bool focal_estimate)
 {
     src_ = src;
     dst_ = dst;
     size_ = size;
+    focal_estimate_ = focal_estimate;
     __android_log_print(ANDROID_LOG_DEBUG,"C++ BundleCV","1");
     setUpInitialCameraParams(cameras);
 
@@ -179,7 +253,11 @@ bool estimate_(vector<Point2f> src,vector<Point2f> dst,Size size,
         total_num_matches_ = static_cast<int>(src.size());
 
     __android_log_print(ANDROID_LOG_DEBUG,"C++ BundleCV","3");
-    CvLevMarq solver(4,
+    int param_number = 3;
+    if(focal_estimate_){
+        param_number = 4;
+    }
+    CvLevMarq solver(param_number,
                      total_num_matches_ * num_errs_per_measurement_,
                      term_criteria_);
     __android_log_print(ANDROID_LOG_DEBUG,"C++ BundleCV","3.5");

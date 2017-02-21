@@ -13,5 +13,5 @@ using namespace std;
 using namespace cv;
 
 bool estimate_(vector<Point2f> src,vector<Point2f> dst,Size size,
-               std::vector<CameraParams> &cameras);
+               std::vector<CameraParams> &cameras,bool focal_estimate);
 #endif //IMAGESTITCHING_BUNDLECV_H
