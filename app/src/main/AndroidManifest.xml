@@ -6,6 +6,7 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.REORDER_TASKS" />
     <uses-feature android:name="android.hardware.camera2.full" />
     <uses-feature android:glEsVersion="0x00031000" android:required="true"/>
     <application
@@ -19,6 +20,7 @@
             android:finishOnTaskLaunch="true"
             android:maxRecents="1"
             android:noHistory="true"
+            android:launchMode="singleInstance"
             >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

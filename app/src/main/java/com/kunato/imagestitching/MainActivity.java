@@ -1,5 +1,7 @@
 package com.kunato.imagestitching;
 import android.app.ActionBar;
+import android.app.ActivityManager;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -83,7 +85,6 @@ public class MainActivity extends FragmentActivity {
         finishAndRemoveTask();
         super.onPause();
 
-
     }
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
@@ -96,7 +97,6 @@ public class MainActivity extends FragmentActivity {
     }
     @Override
     protected void onResume() {
-
         Log.d("Activity","onResume");
         super.onResume();
         mView.onResume();
