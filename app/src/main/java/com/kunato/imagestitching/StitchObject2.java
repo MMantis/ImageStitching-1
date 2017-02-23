@@ -122,10 +122,6 @@ public class StitchObject2 {
             "       ivec2 diff = bpos + tl;" +
             "       vec3 map = mapBackward(vec3(diff.x,diff.y,1),SCALE,k_rinv[0]);\n" +
             "       color = texelFetch(sTexture[1], ivec2(int(round(map.y)),size[1].x - int(round(map.x))),0);\n" +
-            "       if(color.a == 0.0){" +
-            "           color = texelFetch(sTexture[0], ivec2(bpos2.x - corner[0].x ,bpos2.y - corner[0].y) ,0);\n" +
-            "           " +
-            "       }" +
             "       if(int(map.x) < 0 && int(map.x) >= size[1].x && int(map.y) < 0 && int(map.y) >= size[1].y ){" +
             "           color.a = 0.0;\n" +
             "       }" +
@@ -144,6 +140,7 @@ public class StitchObject2 {
 
             "           if(length == 0){" +
             "               color = getSampleFromArray(i,pos,pos2,corner[i]);\n" +
+            "               break;" +
             "           }else{" +
             "               vec4 color_top = getSampleFromArray(i,pos,pos2,corner[i]);\n" +
             "               color *= (1.0-color_top.a);\n" +
@@ -367,23 +364,19 @@ public class StitchObject2 {
 
             }
         }
-
+        //OK
         mTLX = (int) min_x;
         mTLY = (int) min_y;
 
         float max_x = -10000;
         float max_y = -10000;
-        int max_x_index = -1;
-        int max_y_index = -1;
 
         for(int i = 0 ; i < mCurrentSize*2 ;i++){
-            if(cof[i] > max_x && i%2 == 0 && sof[i] != 0){
-                max_x = cof[i];
-                max_x_index = i;
+            if(cof[i] + sof[i] > max_x && i%2 == 0 && sof[i] != 0){
+                max_x = cof[i] + sof[i];
             }
-            if(cof[i] > max_y && i%2 == 1 && sof[i] != 0){
-                max_y = cof[i];
-                max_y_index = i;
+            if(cof[i] + sof[i] > max_y && i%2 == 1 && sof[i] != 0){
+                max_y = cof[i] + sof[i];
             }
         }
         for(int i = 0 ; i < mCurrentSize*2 ;i++){
@@ -394,9 +387,9 @@ public class StitchObject2 {
             }
         }
         corners = cof;
-        mWidth = (int) (max_x-min_x+sof[max_x_index]);
+        mWidth = (int) (max_x-min_x);
 
-        mHeight = (int) (max_y-min_y+sof[max_y_index]);
+        mHeight = (int) (max_y-min_y);
 //        mWidth = 1495;
 //        mHeight = 1719;
         Log.d("Stitch GPU","Size ("+mWidth+","+mHeight+") , TL ("+mTLX+","+mTLY+")");
@@ -505,37 +498,37 @@ public class StitchObject2 {
         GLES31.glDrawArrays(GLES31.GL_TRIANGLE_STRIP, 0, 4);
         mCount++;
 
-        if(mCount == 1) {
-            mScreenBuffer = ByteBuffer.allocateDirect(mHeight * mWidth * 4);
-            mScreenBuffer.order(ByteOrder.nativeOrder());
-            GLES31.glReadPixels(0, 0, mWidth, mHeight, GLES31.GL_RGBA, GLES31.GL_UNSIGNED_BYTE, mScreenBuffer);
-
-            mScreenBuffer.rewind();
-            byte pixelsBuffer[] = new byte[4 * mHeight * mWidth];
-            mScreenBuffer.get(pixelsBuffer);
-            Mat mat = new Mat(mHeight, mWidth, CvType.CV_8UC4);
-            mat.put(0, 0, pixelsBuffer);
-            Mat bgr = new Mat();
-            Imgproc.cvtColor(mat,bgr,Imgproc.COLOR_RGBA2BGRA);
-            Imgcodecs.imwrite("/sdcard/stitch/stitchResult1.jpg", bgr);
-        }
-
-        if(mCount == 2) {
-            mScreenBuffer = ByteBuffer.allocateDirect(mHeight * mWidth * 4);
-            mScreenBuffer.order(ByteOrder.nativeOrder());
-            GLES31.glReadPixels(0, 0, mWidth, mHeight, GLES31.GL_RGBA, GLES31.GL_UNSIGNED_BYTE, mScreenBuffer);
-
-            mScreenBuffer.rewind();
-            byte pixelsBuffer[] = new byte[4 * mHeight * mWidth];
-            mScreenBuffer.get(pixelsBuffer);
-            Mat mat = new Mat(mHeight, mWidth, CvType.CV_8UC4);
-            mat.put(0, 0, pixelsBuffer);
-
-            Mat bgr = new Mat();
-            Imgproc.cvtColor(mat,bgr,Imgproc.COLOR_RGBA2BGRA);
-            Imgcodecs.imwrite("/sdcard/stitch/stitchResult"+mCount+".jpg", bgr);
-        }
-
+//        if(mCount == 1) {
+//            mScreenBuffer = ByteBuffer.allocateDirect(mHeight * mWidth * 4);
+//            mScreenBuffer.order(ByteOrder.nativeOrder());
+//            GLES31.glReadPixels(0, 0, mWidth, mHeight, GLES31.GL_RGBA, GLES31.GL_UNSIGNED_BYTE, mScreenBuffer);
+//
+//            mScreenBuffer.rewind();
+//            byte pixelsBuffer[] = new byte[4 * mHeight * mWidth];
+//            mScreenBuffer.get(pixelsBuffer);
+//            Mat mat = new Mat(mHeight, mWidth, CvType.CV_8UC4);
+//            mat.put(0, 0, pixelsBuffer);
+//            Mat bgr = new Mat();
+//            Imgproc.cvtColor(mat,bgr,Imgproc.COLOR_RGBA2BGRA);
+//            Imgcodecs.imwrite("/sdcard/stitch/stitchResult1.jpg", bgr);
+//        }
+//
+//        if(mCount >= 2) {
+//            mScreenBuffer = ByteBuffer.allocateDirect(mHeight * mWidth * 4);
+//            mScreenBuffer.order(ByteOrder.nativeOrder());
+//            GLES31.glReadPixels(0, 0, mWidth, mHeight, GLES31.GL_RGBA, GLES31.GL_UNSIGNED_BYTE, mScreenBuffer);
+//
+//            mScreenBuffer.rewind();
+//            byte pixelsBuffer[] = new byte[4 * mHeight * mWidth];
+//            mScreenBuffer.get(pixelsBuffer);
+//            Mat mat = new Mat(mHeight, mWidth, CvType.CV_8UC4);
+//            mat.put(0, 0, pixelsBuffer);
+//
+//            Mat bgr = new Mat();
+//            Imgproc.cvtColor(mat,bgr,Imgproc.COLOR_RGBA2BGRA);
+//            Imgcodecs.imwrite("/sdcard/stitch/stitchResult"+mCount+".jpg", bgr);
+//        }
+        Log.d("GPU Stitching","Stitch Complete for "+mCount+" Images.");
         glRenderer.getSphere().mReadyToUpdate = true;
         GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, 0);
 
