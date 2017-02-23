@@ -452,6 +452,7 @@ public class StitchObject2 {
         GLES31.glDrawArrays(GLES31.GL_TRIANGLE_STRIP, 0, 4);
         long end = System.currentTimeMillis();
         Log.d("Stitch GPU","TimeSpend : "+(end-start2)*0.001+ " : "+(start2-start)*0.001 + " ; "+count);
+
         //END OF RENDERING
 
 //        try {
@@ -528,6 +529,7 @@ public class StitchObject2 {
 //            Imgproc.cvtColor(mat,bgr,Imgproc.COLOR_RGBA2BGRA);
 //            Imgcodecs.imwrite("/sdcard/stitch/stitchResult"+mCount+".jpg", bgr);
 //        }
+
         Log.d("GPU Stitching","Stitch Complete for "+mCount+" Images.");
         glRenderer.getSphere().mReadyToUpdate = true;
         GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, 0);

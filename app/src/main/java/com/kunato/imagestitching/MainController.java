@@ -264,7 +264,6 @@ public class MainController extends GLSurfaceView {
 
     public void surfaceCreated ( SurfaceHolder holder ) {
         super.surfaceCreated(holder);
-        Resume();
     }
 
     public void surfaceDestroyed ( SurfaceHolder holder ) {
@@ -378,12 +377,14 @@ public class MainController extends GLSurfaceView {
                 mPreviewRequestBuilder.set(SENSOR_EXPOSURE_TIME,mLastShutterSpeed/i);
                 mAEReport = true;
             }
+
             updatePreview();
         }
         else {
             if(!mAsyncRunning)
                 mRunning = true;
             Log.d("MainController","Button Press, Still Running");
+
          }
     }
 
@@ -400,13 +401,13 @@ public class MainController extends GLSurfaceView {
     }
 
     public void Pause() {
+        stopBackgroundThread();
         Log.e(TAG, "onPause");
         if(mLocationServices!= null)
             mLocationServices.stop();
         if(mSensorManager != null)
             mSensorManager.unregisterListener(mSensorListener);
         closeCamera();
-        stopBackgroundThread();
     }
 
     private void openCamera() {
@@ -484,11 +485,12 @@ public class MainController extends GLSurfaceView {
 
     private void stopBackgroundThread() {
         try {
+            mProcessor.stopProcess();
             mBackgroundThread.quitSafely();
             mBackgroundThread.join();
             mBackgroundThread = null;
             mBackgroundHandler = null;
-            mProcessor.stopProcess();
+
         } catch (InterruptedException | NullPointerException e) {
             e.printStackTrace();
             mBackgroundThread = null;

@@ -14,7 +14,12 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme" >
-        <activity android:name="com.kunato.imagestitching.MainActivity" >
+        <activity android:name="com.kunato.imagestitching.MainActivity"
+            android:excludeFromRecents="true"
+            android:finishOnTaskLaunch="true"
+            android:maxRecents="1"
+            android:noHistory="true"
+            >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

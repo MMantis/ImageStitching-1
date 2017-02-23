@@ -1,5 +1,6 @@
 package com.kunato.imagestitching;
 import android.app.ActionBar;
+import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
@@ -67,7 +68,7 @@ public class MainActivity extends FragmentActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        Log.d("Activity","onCreate");
         mView = new MainController(this);
         setContentView(mView);
         initComponent();
@@ -75,19 +76,31 @@ public class MainActivity extends FragmentActivity {
 
     @Override
     protected void onPause() {
+
+        Log.d("Activity","onPause");
         mView.Pause();
         mView.onPause();
-
+        finishAndRemoveTask();
         super.onPause();
 
-    }
 
+    }
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if(!hasFocus) {
+            Log.d("Activity", "Lost focus !");
+            finishAndRemoveTask();
+
+        }
+    }
     @Override
     protected void onResume() {
 
+        Log.d("Activity","onResume");
         super.onResume();
         mView.onResume();
-        //mView.Resume();
+        mView.Resume();
     }
 
 }

@@ -83,18 +83,22 @@ public class RSProcessor {
 
     }
     public void stopProcess(){
+
         try {
+//
 
-            mProcessingThread.quitSafely();
+            mProcessingHandler.removeCallbacks(mTask);
             mProcessingThread.join();
+            mProcessingThread.quitSafely();
 
+//
             mProcessingHandler = null;
             mProcessingThread = null;
-        } catch (InterruptedException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             mProcessingHandler = null;
             mProcessingThread = null;
-
+//
         }
     }
     public Surface getInputSurface() {
@@ -121,7 +125,6 @@ public class RSProcessor {
 
         @Override
         public void onBufferAvailable(Allocation a) {
-
             synchronized (this) {
                 mPendingFrames++;
                 mProcessingHandler.post(this);
