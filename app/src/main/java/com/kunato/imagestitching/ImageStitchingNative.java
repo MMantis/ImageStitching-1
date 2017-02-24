@@ -24,7 +24,6 @@ public class ImageStitchingNative {
     private Context context;
     private Bitmap mUploadingBitmap = null;
     private float[] mBitmapArea;
-    private int mCount = 0;
     private ImageStitchingNative(){
     }
 
@@ -48,24 +47,25 @@ public class ImageStitchingNative {
         Factory.getFactory(null).getGlRenderer().getStitch().bitmapToCPU(iBitmap,mPictureSize);
 
         Factory.mainController.startRecordQuaternion();
-        Log.d("JAVA Stitch", "Image Input Size : "+imageMat.size().width + "*" + imageMat.size().height);
+        Log.d("Java Stitch", "Image Input Size : "+imageMat.size().width + "*" + imageMat.size().height);
         Mat ret = new Mat();
         Mat roi = new Mat();
         Mat k_rinv = new Mat();
+//        Highgui.imwrite("/sdcard/stitch/input"+mPictureSize+".jpg",imageMat);
         Mat area = new Mat(1,4,CvType.CV_32F);
         Mat rot = new Mat(3,3,CvType.CV_32F);
-        Log.d("JAVA Stitch", "Image Rotation Input : "+rotMat.dump());
+        Log.d("Java Stitch", "Image Rotation Input : "+rotMat.dump());
         nativeAddStitch(imageMat.getNativeObjAddr(), rotMat.getNativeObjAddr());
         Mat refinedMat = new Mat(4,4,CvType.CV_32F);
         int rtCode = nativeStitch(ret.getNativeObjAddr(), area.getNativeObjAddr(),rot.getNativeObjAddr(),refinedMat.getNativeObjAddr(),roi.getNativeObjAddr(),k_rinv.getNativeObjAddr());
-        Log.d("JAVA Stitch", "JNI Return Code : "+rtCode + "");
+        Log.d("Java Stitch", "JNI Return Code : "+rtCode + "");
         float[] areaFloat = new float[4];
         area.get(0, 0, areaFloat);
 
 
         //areaFloat[0]+=0;
         //areaFloat[1]-=150;
-        Log.d("JAVA Stitch", "Return Area [" + Arrays.toString(areaFloat)+"]");
+        Log.d("Java Stitch", "Return Area [" + Arrays.toString(areaFloat)+"]");
 
         if(rtCode == -1){
             return 1;
@@ -73,13 +73,12 @@ public class ImageStitchingNative {
         if(rtCode != 1) {
             return rtCode;
         }
-        mCount++;
         int[] roiData = new int[roi.rows()*roi.cols()];
         float[] k_rinvData = new float[k_rinv.rows()*k_rinv.cols()];
         roi.get(0, 0, roiData);
         k_rinv.get(0,0,k_rinvData);
-        Log.d("JAVA Stitch", "ROI : "+Arrays.toString(roiData));
-        Log.d("JAVA Stitch", "K_RINV : "+Arrays.toString(k_rinvData));
+        Log.d("Java Stitch", "ROI : "+Arrays.toString(roiData));
+        Log.d("Java Stitch", "K_RINV : "+Arrays.toString(k_rinvData));
 
         //Bitmap bitmap = Bitmap.createBitmap(ret.cols(), ret.rows(), Bitmap.Config.ARGB_8888);
         //Mat test = new Mat(ret.height(),ret.width(),CvType.CV_8UC3);
@@ -87,26 +86,21 @@ public class ImageStitchingNative {
         //Highgui.imwrite("/sdcard/stitch/pano"+mPictureSize+".jpg",test);
 
         //Utils.matToBitmap(ret, bitmap);
-        //Log.d("JAVA Stitch", "Add Panorama Finished, Size :" + ret.size().width + "," + ret.size().height);
-        Log.d("JAVA Stitch","Stitch Number : "+mCount);
-
-        if(mCount >= 4) {
+        //Log.d("JAVA Stitch", "Add Panorama Finished, Size :" + ret.size().width + "," + ret.size().height
+        float[] refinedMatArray = new float[16];
+        refinedMat.get(0, 0, refinedMatArray);
+        float[] refinedQuad = Util.matrixToQuad(refinedMatArray);
+        Factory.mainController.updateQuaternion(refinedQuad, Factory.mainController.mDeltaQuaternion);
+        //5 Image
+        if(mPictureSize >= 4) {
             //Send ROI to GPU
-            Factory.getFactory(null).getGlRenderer().getStitch().setROI(roiData, k_rinvData);
-            float[] refinedMatArray = new float[16];
-            refinedMat.get(0, 0, refinedMatArray);
-            float[] refinedQuad = Util.matrixToQuad(refinedMatArray);
+            Factory.getFactory(null).getGlRenderer().getStitch().setROI(roiData, k_rinvData,mPictureSize);
+
             Log.d("Java Stitch", "Refined Matrix : " + Arrays.toString(refinedMatArray));
             Log.d("Java Stitch", "Refined Quad : " + Arrays.toString(refinedQuad));
 
-            Log.d("JAVA Stitch", "Before Align Quad" + Arrays.toString(Factory.mainController.mQuaternion));
-            Factory.mainController.updateQuaternion(refinedQuad, Factory.mainController.mDeltaQuaternion);
-            Log.d("JAVA Stitch", "After Align Quad :" + Arrays.toString(Factory.mainController.mQuaternion));
-
             mBitmapArea = areaFloat;
 
-//        Factory.getFactory(null).getRSProcessor(null, null).requestAligning();;
-//        Factory.mainController.requireAlign();
 
             Factory.getFactory(null).getGlRenderer().getSphere().updateArea(mBitmapArea);
         }
@@ -138,7 +132,6 @@ public class ImageStitchingNative {
 
             Log.d("JAVA Stitch","HomographyMat");
             for (int i = 0; i < 3; i++) {
-
                 Log.d("JAVA Stitch", String.format("[%f %f %f]", data[i * 3], data[i * 3 + 1], data[i * 3 + 2]));
             }
         }

@@ -88,7 +88,7 @@ public class StitchObject {
             "       vec3 map = mapBackward(vec3(diff.x,diff.y,1),SCALE,k_rinv[0]);\n" +
             "       color = texelFetch(sTexture[0], ivec2(round(map.x),round(map.y)) ,0);\n" +
             "       if(int(map.x) < 0 && int(map.x) >= size[0].x && int(map.y) < 0 && int(map.y) >= size[0].y ){" +
-            "           color.a = 0.0;" +
+            "           color = vec4(0,0,0,0);" +
             "       }" +
             "       else{" +
             "           int x = int(map.x);" +
@@ -113,7 +113,7 @@ public class StitchObject {
             "       vec3 map = mapBackward(vec3(diff.x,diff.y,1),SCALE,k_rinv[1]);" +
             "       color = texelFetch(sTexture[1], ivec2(round(map.x),round(map.y)) ,0);\n" +
             "       if(int(map.x) < 0 && int(map.x) >= size[1].x && int(map.y) < 0 && int(map.y) >= size[1].y ){" +
-            "           color.a = 0.0;" +
+            "           color = vec4(0,0,0,0);" +
             "       }" +
             "       else{" +
             "           int x = int(map.x);" +
@@ -138,7 +138,7 @@ public class StitchObject {
             "       vec3 map = mapBackward(vec3(diff.x,diff.y,1),SCALE,k_rinv[2]);" +
             "       color = texelFetch(sTexture[2], ivec2(round(map.x),round(map.y)) ,0);\n" +
             "       if(int(map.x) < 0 && int(map.x) >= size[2].x && int(map.y) < 0 && int(map.y) >= size[2].y ){" +
-            "           color.a = 0.0;" +
+            "           color = vec4(0,0,0,0);" +
             "       }" +
             "       else{" +
             "           int x = int(map.x);" +
@@ -163,7 +163,7 @@ public class StitchObject {
             "       vec3 map = mapBackward(vec3(diff.x,diff.y,1),SCALE,k_rinv[3]);" +
             "       color = texelFetch(sTexture[3], ivec2(round(map.x),round(map.y)) ,0);\n" +
             "       if(int(map.x) < 0 && int(map.x) >= size[3].x && int(map.y) < 0 && int(map.y) >= size[3].y ){" +
-            "           color.a = 0.0;" +
+            "           color = vec4(0,0,0,0);" +
             "       }" +
             "       else{" +
             "           int x = int(map.x);" +
@@ -188,7 +188,7 @@ public class StitchObject {
             "       vec3 map = mapBackward(vec3(diff.x,diff.y,1),SCALE,k_rinv[4]);" +
             "       color = texelFetch(sTexture[4], ivec2(round(map.x),round(map.y)) ,0);\n" +
             "       if(int(map.x) < 0 && int(map.x) >= size[4].x && int(map.y) < 0 && int(map.y) >= size[4].y ){" +
-            "           color.a = 0.0;" +
+            "           color = vec4(0,0,0,0);" +
             "       }" +
             "       else{" +
             "           int x = int(map.x);" +
@@ -213,7 +213,7 @@ public class StitchObject {
             "       vec3 map = mapBackward(vec3(diff.x,diff.y,1),SCALE,k_rinv[5]);" +
             "       color = texelFetch(sTexture[5], ivec2(round(map.x),round(map.y)) ,0);\n" +
             "       if(int(map.x) < 0 && int(map.x) >= size[5].x && int(map.y) < 0 && int(map.y) >= size[5].y ){" +
-            "           color.a = 0.0;" +
+            "           color = vec4(0,0,0,0);" +
             "       }" +
             "       else{" +
             "           int x = int(map.x);" +
@@ -238,7 +238,23 @@ public class StitchObject {
             "       vec3 map = mapBackward(vec3(diff.x,diff.y,1),SCALE,k_rinv[6]);" +
             "       color = texelFetch(sTexture[6], ivec2(round(map.x),round(map.y)) ,0);\n" +
             "       if(int(map.x) < 0 && int(map.x) >= size[6].x && int(map.y) < 0 && int(map.y) >= size[6].y ){" +
-            "           color.a = 0.0;" +
+            "           color = vec4(0,0,0,0);" +
+            "       }" +
+            "       else{" +
+            "           int x = int(map.x);" +
+            "           if(x > size[ndx].x - int(map.x)){" +
+            "               x = size[ndx].x - int(map.x);" +
+            "           }" +
+            "           int y = int(map.y);" +
+            "           if(y > size[ndx].y - int(map.y)){" +
+            "               y = size[ndx].y - int(map.y);" +
+            "           }" +
+            "           if(y > x){" +
+            "               color *= float(x)/float(size[ndx].x);" +
+            "           }" +
+            "           else{" +
+            "               color *= float(y)/float(size[ndx].y);" +
+            "           }" +
             "       }" +
             "   }\n" +
             "   else if(ndx == 7){\n" +
@@ -247,7 +263,7 @@ public class StitchObject {
             "       vec3 map = mapBackward(vec3(diff.x,diff.y,1),SCALE,k_rinv[7]);" +
             "       color = texelFetch(sTexture[7], ivec2(round(map.x),round(map.y)) ,0);\n" +
             "       if(int(map.x) < 0 && int(map.x) >= size[7].x && int(map.y) < 0 && int(map.y) >= size[7].y ){" +
-            "           color.a = 0.0;" +
+            "           color = vec4(0,0,0,0);" +
             "       }" +
             "       else{" +
             "           int x = int(map.x);" +
@@ -272,7 +288,7 @@ public class StitchObject {
             "       vec3 map = mapBackward(vec3(diff.x,diff.y,1),SCALE,k_rinv[8]);" +
             "       color = texelFetch(sTexture[8], ivec2(round(map.x),round(map.y)) ,0);\n" +
             "       if(int(map.x) < 0 && int(map.x) >= size[8].x && int(map.y) < 0 && int(map.y) >= size[8].y ){" +
-            "           color.a = 0.0;" +
+            "           color = vec4(0,0,0,0);" +
             "       }" +
             "       else{" +
             "           int x = int(map.x);" +
@@ -297,7 +313,7 @@ public class StitchObject {
             "       vec3 map = mapBackward(vec3(diff.x,diff.y,1),SCALE,k_rinv[9]);" +
             "       color = texelFetch(sTexture[9], ivec2(round(map.x),round(map.y)) ,0);\n" +
             "       if(int(map.x) < 0 && int(map.x) >= size[9].x && int(map.y) < 0 && int(map.y) >= size[9].y ){" +
-            "           color.a = 0.0;" +
+            "           color = vec4(0,0,0,0);" +
             "       }" +
             "       else{" +
             "           int x = int(map.x);" +
@@ -322,7 +338,7 @@ public class StitchObject {
             "       vec3 map = mapBackward(vec3(diff.x,diff.y,1),SCALE,k_rinv[10]);" +
             "       color = texelFetch(sTexture[10], ivec2(round(map.x),round(map.y)) ,0);\n" +
             "       if(int(map.x) < 0 && int(map.x) >= size[10].x && int(map.y) < 0 && int(map.y) >= size[10].y ){" +
-            "           color.a = 0.0;" +
+            "           color = vec4(0,0,0,0);" +
             "       }" +
             "       else{" +
             "           int x = int(map.x);" +
@@ -354,7 +370,7 @@ public class StitchObject {
             "       }" +
             "   }" +
             "   if(color.a > 0.0){" +
-            "       color/=color.w;" +
+            "       color/=color.a;\n" +
             "       fragmentColor = color;" +
             "   }" +
             "   \n" +
@@ -371,7 +387,7 @@ public class StitchObject {
     private int[] corners = new int[NUMBER_OF_TEXTURE*2];
     private int[] sizes = new int[NUMBER_OF_TEXTURE*2];
     private int[] mFBO = new int[1];
-    private int mCurrentSize = 1;
+    private boolean[] mBitmapLoaded = new boolean[NUMBER_OF_TEXTURE];
     private int mFBOID;
     private int mFBOTex;
     private static final float SCALE = 1468.803406f;
@@ -388,6 +404,7 @@ public class StitchObject {
     private int mHeight = 0;
     private boolean mUpdate = false;
     private Context context;
+    private int mCurrentSize;
 
     public StitchObject(GLRenderer renderer) {
         Context context = renderer.mView.getActivity();
@@ -448,7 +465,7 @@ public class StitchObject {
         return mFBO[0];
     }
 
-    public void setROI(int[] roi,float[] k_rinv){
+    public void setROI(int[] roi,float[] k_rinv,int size){
         Log.d("Stitch GPU","Set ROI");
         for(int i = 0 ; i < roi.length ;i++){
 
@@ -467,22 +484,30 @@ public class StitchObject {
         }
         k_rinvData = k_rinv;
 //        loadBitmap(mCurrentSize,null);
-        mCurrentSize+=1;
+        mCurrentSize = size + 1;
         mUpdate = true;
     }
-
+    public void loadBitmaps(){
+        for(int i = 0 ; i < mCurrentSize ;i++){
+            if(!mBitmapLoaded[i]){
+                loadBitmap(i);
+                mBitmapLoaded[i] = true;
+            }
+            updateParam();
+            createFBO();
+        }
+    }
     public void loadBitmap(int i){
-        GLES31.glActiveTexture(GLES31.GL_TEXTURE0+i);
-        GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, this.mTextures[i]);
-        GLES31.glTexParameterf(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_MIN_FILTER, GLES31.GL_NEAREST);
-        GLES31.glTexParameterf(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_MAG_FILTER, GLES31.GL_NEAREST);
-        GLES31.glTexParameterf(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_WRAP_S,GLES31.GL_CLAMP_TO_EDGE);
-        GLES31.glTexParameterf(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_WRAP_T,GLES31.GL_CLAMP_TO_EDGE);
-        GLUtils.texImage2D(GLES31.GL_TEXTURE_2D, 0, mCPUBitmap[i], 0);
-        GLES31.glGenerateMipmap(GLES31.GL_TEXTURE_2D);
-        mCPUBitmap[i].recycle();
-        updateParam();
-        createFBO();
+            GLES31.glActiveTexture(GLES31.GL_TEXTURE0 + i);
+            GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, this.mTextures[i]);
+            GLES31.glTexParameterf(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_MIN_FILTER, GLES31.GL_NEAREST);
+            GLES31.glTexParameterf(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_MAG_FILTER, GLES31.GL_NEAREST);
+            GLES31.glTexParameterf(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_WRAP_S, GLES31.GL_CLAMP_TO_EDGE);
+            GLES31.glTexParameterf(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_WRAP_T, GLES31.GL_CLAMP_TO_EDGE);
+            GLUtils.texImage2D(GLES31.GL_TEXTURE_2D, 0, mCPUBitmap[i], 0);
+            GLES31.glGenerateMipmap(GLES31.GL_TEXTURE_2D);
+            mCPUBitmap[i].recycle();
+
     }
 
     public void bitmapToCPU(Bitmap bitmap,int index){
@@ -557,13 +582,14 @@ public class StitchObject {
         if(!mUpdate)
             return;
         long start = System.currentTimeMillis();
-        if(mCurrentSize == 2){
-            loadBitmap(0);
-            loadBitmap(1);
-        }
-        else{
-            loadBitmap(mCurrentSize-1);
-        }
+//        if(mCurrentSize == 2){
+//            loadBitmap(0);
+//            loadBitmap(1);
+//        }
+//        else{
+//            loadBitmap(mCurrentSize-1);
+//        }
+        loadBitmaps();
         int count = 0;
 
         long start2 = System.currentTimeMillis();
