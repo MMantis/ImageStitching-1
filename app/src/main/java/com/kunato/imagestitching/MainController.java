@@ -111,7 +111,7 @@ public class MainController extends GLSurfaceView {
 
         @Override
         public void onImageAvailable(ImageReader reader) {
-            Image image = reader.acquireLatestImage();
+            Image image = reader.acquireNextImage();
             if(!mAsyncRunning && mRunning){
                 mAsyncRunning = true;
                 mRunning = false;
