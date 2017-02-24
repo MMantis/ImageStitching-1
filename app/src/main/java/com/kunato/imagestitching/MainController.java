@@ -342,7 +342,8 @@ public class MainController extends GLSurfaceView {
 //                rotationCVMat.put(i, j, Util.UP180[i * 3 + j]);
             }
         }
-        imageStitchingTask.execute(rotationCVMat);
+        //AR_SYSTEM NO STITCH
+        //imageStitchingTask.execute(rotationCVMat);
     }
 
     public void runProcess(boolean firstTime){

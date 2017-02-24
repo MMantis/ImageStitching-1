@@ -52,7 +52,6 @@ public class GLRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
     private int[] mTexturePool = new int[2];
     private float[] mModelViewMatrix = new float[16];
     private CanvasObject mCanvasObject;
-    private SphereObject mSphere;
     private CanvasObject mCanvasObjectProcessed;
     public int mWidth;
     public int mHeight;
@@ -64,7 +63,6 @@ public class GLRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
         mView = view;
     }
     public void captureScreen(){
-        mSphere.readPixel = true;
         readInProgress = true;
     }
     public void onSurfaceCreated ( GL10 unused, EGLConfig config ) {
@@ -158,43 +156,10 @@ public class GLRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
 
         //multiply MM(retMat, retMatOffset, mat1 * mat2 (includeOffset))
 //        mCanvasObject.draw(mMVPMatrix);
-        if(readInProgress){
-            mSphere.draw(mRotationMatrix,mProjectionMatrix,1.0f);
-            GLES31.glClear(GLES31.GL_COLOR_BUFFER_BIT);
-            GLES31.glClear(GLES31.GL_DEPTH_BUFFER_BIT);
-            mSphere.readPixel = false;
-            readInProgress = false;
-        }
         //Test mRotation
-        mSphere.draw(mRotationMatrix,mProjectionMatrix,1.0f);
-        GLES31.glClear(GLES31.GL_COLOR_BUFFER_BIT);
-        GLES31.glClear(GLES31.GL_DEPTH_BUFFER_BIT);
-
-        mSphere.mRealRender = true;
-
         mCanvasObjectProcessed.draw(mViewCanvasMatrix,mHomography);
-
-        if(mUsingOldMatrix){
-            mSphere.draw(mPreviousRotMatrix,mProjectionMatrix,mFadeAlpha);
-            if(mFadeAlpha > 0.0){
-                mFadeAlpha -= 1f/20f;
-            }
-            if(mFadeAlpha < 0.3){
-                for(int i = 0 ; i < mARObject.size() ; i++)
-                    mARObject.get(i).draw(mRotationMatrix,mProjectionMatrix);
-            }
-
-        }
-        else{
-            if(mFadeAlpha < 1.0){
-                mFadeAlpha += 1f/20f;
-            }
-            mSphere.draw(mRotationMatrix,mProjectionMatrix,mFadeAlpha);
-            for(int i = 0 ; i < mARObject.size() ; i++)
-                mARObject.get(i).draw(mRotationMatrix,mProjectionMatrix);
-        }
-        mSphere.mRealRender = false;
-
+        for(int i = 0 ; i < mARObject.size() ; i++)
+            mARObject.get(i).draw(mRotationMatrix,mProjectionMatrix);
         GLES31.glFlush();
     }
 
@@ -202,7 +167,6 @@ public class GLRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
         mWidth = width;
         mHeight = height;
         GLES31.glViewport(0, 0, mWidth, mHeight);
-        mSphere = new SphereObject(this,mWidth,mHeight);
 
         GLES31.glRenderbufferStorage(GLES31.GL_RENDERBUFFER, GLES11Ext.GL_RGBA8_OES,mWidth,mHeight);
         Log.v("GL", "Screen" + String.format("(Width:Height)[%d,%d]", mWidth,mHeight));
@@ -238,7 +202,7 @@ public class GLRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
         mRotationMatrix = rotationMatrix;
     }
     public SphereObject getSphere(){
-        return mSphere;
+        return null;
     }
     public CanvasObject getCanvas() { return mCanvasObject; }
     public SurfaceTexture getSurfaceTexture(){
