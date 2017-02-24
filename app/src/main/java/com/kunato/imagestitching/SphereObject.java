@@ -120,7 +120,7 @@ public class SphereObject {
         mProgram = Util.loadShader(vertexShaderCode, fragmentShaderCode);
 
         createFBO();
-        loadGLTexture(context, R.drawable.pano, false);
+        loadGLTexture(context, R.drawable.pano, true);
 
 
     }
@@ -171,7 +171,7 @@ public class SphereObject {
         GLES31.glTexParameterf(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_WRAP_S,GLES31.GL_CLAMP_TO_EDGE);
         GLES31.glTexParameterf(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_WRAP_T,GLES31.GL_CLAMP_TO_EDGE);
         if(show)
-        mockTexImage2D(bitmap);
+            mockTexImage2D(bitmap);
     }
 
 
@@ -211,7 +211,8 @@ public class SphereObject {
         int alphah = GLES31.glGetUniformLocation(mProgram,"alpha");
 
         GLES31.glActiveTexture(GLES31.GL_TEXTURE0);
-        GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, glRenderer.getStitch().getFBOTexture());
+        //Texture
+        GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, this.mTextures[0]);
         int[] wh = new int[2];
         GLES31.glGetTexLevelParameteriv(GLES31.GL_TEXTURE_2D, 0, GLES31.GL_TEXTURE_WIDTH, wh, 0);
         GLES31.glGetTexLevelParameteriv(GLES31.GL_TEXTURE_2D, 0, GLES31.GL_TEXTURE_HEIGHT, wh, 1);
@@ -244,6 +245,7 @@ public class SphereObject {
         GLES31.glVertexAttribPointer(mTextureCoordinateHandle, 2, GLES31.GL_FLOAT, false, mSphereShape.getVeticesStride(), mSphereBuffer);
         //Uniform
         mTextureHandle = GLES31.glGetUniformLocation(mProgram, "sTexture");
+        //? 0
         GLES31.glUniform1i(mTextureHandle, 0);
         //Area
         GLES31.glUniform1f(xh,mArea[0]);
