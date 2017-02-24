@@ -806,7 +806,6 @@ JNIEXPORT jint JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativ
 
 	vector<CameraParams> cameras;
 	for(int i = 0; i < num_images;i++){
-
 		__android_log_print(ANDROID_LOG_INFO,"C++ Stitching","Input Image Size : %d,%d ",images[i].size.height,images[i].size.width);
 		cameras.push_back(images[i].param);
 	}

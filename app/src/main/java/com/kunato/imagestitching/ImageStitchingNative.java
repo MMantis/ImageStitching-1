@@ -40,7 +40,7 @@ public class ImageStitchingNative {
         //Load Image to GPU
 
         Mat rgba = new Mat(imageMat.cols(),imageMat.rows(),CvType.CV_8UC4);
-        Core.flip(imageMat.t(),imageMat,0);
+        Core.flip(imageMat.t(),imageMat,1);
         Imgproc.cvtColor(imageMat,rgba,Imgproc.COLOR_BGR2RGBA);
         Bitmap iBitmap = Bitmap.createBitmap(rgba.cols(),rgba.rows(),Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(rgba,iBitmap);
