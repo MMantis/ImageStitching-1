@@ -18,9 +18,7 @@
         <activity android:name="com.kunato.imagestitching.MainActivity"
             android:excludeFromRecents="true"
             android:finishOnTaskLaunch="true"
-            android:maxRecents="1"
             android:noHistory="true"
-            android:launchMode="singleInstance"
             >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
