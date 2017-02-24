@@ -24,7 +24,7 @@ public class ImageStitchingNative {
     private Context context;
     private Bitmap mUploadingBitmap = null;
     private float[] mBitmapArea;
-
+    private int mCount = 0;
     private ImageStitchingNative(){
     }
 
@@ -73,15 +73,13 @@ public class ImageStitchingNative {
         if(rtCode != 1) {
             return rtCode;
         }
+        mCount++;
         int[] roiData = new int[roi.rows()*roi.cols()];
         float[] k_rinvData = new float[k_rinv.rows()*k_rinv.cols()];
         roi.get(0, 0, roiData);
         k_rinv.get(0,0,k_rinvData);
         Log.d("JAVA Stitch", "ROI : "+Arrays.toString(roiData));
         Log.d("JAVA Stitch", "K_RINV : "+Arrays.toString(k_rinvData));
-
-        //Send ROI to GPU
-        Factory.getFactory(null).getGlRenderer().getStitch().setROI(roiData,k_rinvData);
 
         //Bitmap bitmap = Bitmap.createBitmap(ret.cols(), ret.rows(), Bitmap.Config.ARGB_8888);
         //Mat test = new Mat(ret.height(),ret.width(),CvType.CV_8UC3);
@@ -90,23 +88,28 @@ public class ImageStitchingNative {
 
         //Utils.matToBitmap(ret, bitmap);
         //Log.d("JAVA Stitch", "Add Panorama Finished, Size :" + ret.size().width + "," + ret.size().height);
+        Log.d("JAVA Stitch","Stitch Number : "+mCount);
 
-        float[] refinedMatArray = new float[16];
-        refinedMat.get(0,0,refinedMatArray);
-        float[] refinedQuad = Util.matrixToQuad(refinedMatArray);
-        Log.d("Java Stitch","Refined Matrix : "+Arrays.toString(refinedMatArray));
-        Log.d("Java Stitch","Refined Quad : "+Arrays.toString(refinedQuad));
+        if(mCount >= 4) {
+            //Send ROI to GPU
+            Factory.getFactory(null).getGlRenderer().getStitch().setROI(roiData, k_rinvData);
+            float[] refinedMatArray = new float[16];
+            refinedMat.get(0, 0, refinedMatArray);
+            float[] refinedQuad = Util.matrixToQuad(refinedMatArray);
+            Log.d("Java Stitch", "Refined Matrix : " + Arrays.toString(refinedMatArray));
+            Log.d("Java Stitch", "Refined Quad : " + Arrays.toString(refinedQuad));
 
-        Log.d("JAVA Stitch","Before Align Quad"+Arrays.toString(Factory.mainController.mQuaternion));
-        Factory.mainController.updateQuaternion(refinedQuad,Factory.mainController.mDeltaQuaternion);
-        Log.d("JAVA Stitch", "After Align Quad :"+Arrays.toString(Factory.mainController.mQuaternion));
+            Log.d("JAVA Stitch", "Before Align Quad" + Arrays.toString(Factory.mainController.mQuaternion));
+            Factory.mainController.updateQuaternion(refinedQuad, Factory.mainController.mDeltaQuaternion);
+            Log.d("JAVA Stitch", "After Align Quad :" + Arrays.toString(Factory.mainController.mQuaternion));
 
-        mBitmapArea = areaFloat;
+            mBitmapArea = areaFloat;
 
 //        Factory.getFactory(null).getRSProcessor(null, null).requestAligning();;
 //        Factory.mainController.requireAlign();
 
-        Factory.getFactory(null).getGlRenderer().getSphere().updateArea(mBitmapArea);
+            Factory.getFactory(null).getGlRenderer().getSphere().updateArea(mBitmapArea);
+        }
         return rtCode;
     }
 
