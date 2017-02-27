@@ -38,13 +38,15 @@
 // loss of use, data, or profits; or business interruption) however caused
 // and on any theory of liability, whether in contract, strict liability,
 // or tort (including negligence or otherwise) arising in any way out of
-// the use of this software, even if advised of the possibility of such damage.
+// the use of t.his software, even if advised of the possibility of such damage.
 //
 //
 //M*/
 #pragma ide diagnostic ignored "ArrayIssue"
 #define EXPERIMENT 0
 #define MINIMIZE
+
+
 #include "stitching.h"
 
 using namespace std;
@@ -561,6 +563,7 @@ void doComposition(float warped_image_scale,vector<CameraParams> cameras,vector<
 	cv::FileStorage pfs("/sdcard/stitch/position.yml", cv::FileStorage::WRITE);
 #endif
 
+	MultiBandBlender mb = MultiBandBlender();
 	double compose_work_aspect = compose_scale / work_scale;
 	Mat img_warped;
 	Mat dilated_mask, seam_mask;
@@ -653,6 +656,10 @@ void doComposition(float warped_image_scale,vector<CameraParams> cameras,vector<
 		}
 		if (!blender_created)
 		{
+			mb.setNumBands(12);
+
+
+
 		    clock_t c_c4 = std::clock();
 			blender_created = 1;
 			int width = work_width*compose_work_aspect;
@@ -668,10 +675,12 @@ void doComposition(float warped_image_scale,vector<CameraParams> cameras,vector<
             }
 			Rect dst = resultRoi(corners, sizes);
 			dst.x -= 10;
+
             dst.y -= 10;
             dst.width += 20;
             dst.height += 20;
-			composer::prepare(dst);
+			composer::prepare(dst,blend_type);
+			mb.prepare(dst);
 			area.at<float>(0,0) = (width/2)+dst.x;
 			area.at<float>(0,1) = dst.y;
 			area.at<float>(0,2) = dst.width;
@@ -695,6 +704,7 @@ void doComposition(float warped_image_scale,vector<CameraParams> cameras,vector<
 		pfs << "s_x" << p_img[i].compose_image_warped.cols;
 		pfs << "s_y" << p_img[i].compose_image_warped.rows;
 #endif
+		mb.feed(p_img[i].compose_image_warped, p_img[i].compose_mask_warped, p_img[i].compose_corner);
 		clock_t c_c7 = std::clock();
 
         c_feed_total+=(double)(c_c7-c_c6);
@@ -705,6 +715,10 @@ void doComposition(float warped_image_scale,vector<CameraParams> cameras,vector<
 	Mat result_mask;
 	//opencv doing thing as bgr
 	composer::process(result,result_mask);
+	Mat result2, result_mask2;
+	mb.blend(result2, result_mask2);
+	imwrite("/sdcard/stitch/pyramid_cv.jpg",result2);
+
 	clock_t c_c9 = std::clock();
 	__android_log_print(ANDROID_LOG_DEBUG,"C++ Composition","Timer Merged %lf",(double)(c_c9-c_c8)/CLOCKS_PER_SEC);
 	//out as rgba
@@ -977,7 +991,8 @@ JNIEXPORT jint JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativ
 	clock_t c_m5 = clock();
 	clock_t c_m6 = clock();
 #ifdef CPU_STITCH
-	doComposition(warped_image_scale,cameras,images,nullptr,work_scale,compose_scale,blend_type,result,area);
+	doComposition(warped_image_scale,cameras,images,nullptr,work_scale,compose_scale,12,result,area);
+
 	imwrite("/sdcard/stitch/cpu_panorama.jpg",result);
 	__android_log_print(ANDROID_LOG_ERROR,"C++ Stitching","Composed %d Images",num_images);
 #endif

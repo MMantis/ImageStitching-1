@@ -92,7 +92,7 @@ public class ImageStitchingNative {
         float[] refinedQuad = Util.matrixToQuad(refinedMatArray);
         Factory.mainController.updateQuaternion(refinedQuad, Factory.mainController.mDeltaQuaternion);
         //5 Image
-        if(mPictureSize >= 4) {
+        if(mPictureSize >= 1) {
             //Send ROI to GPU
             Factory.getFactory(null).getGlRenderer().getStitch().setROI(roiData, k_rinvData,mPictureSize);
 

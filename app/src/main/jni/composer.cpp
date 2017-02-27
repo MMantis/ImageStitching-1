@@ -4,11 +4,13 @@ using namespace cv;
 using namespace cv::detail;
 namespace composer {
     static const float WEIGHT_EPS = 1e-5f;
+#define BLENDING
+#define ALPHA
 
 #ifndef BLENDING
     Mat dst_, dst_mask_,dst_dt_;
     Rect dst_roi_;
-    void prepare(Rect dst_roi){
+    void prepare(Rect dst_roi,int not_used){
         __android_log_print(ANDROID_LOG_DEBUG,"Composer","Prepare Normal");
         dst_.create(dst_roi.size(), CV_8UC3);
         dst_.setTo(Scalar::all(0));
@@ -117,15 +119,14 @@ namespace composer {
     Rect dst_roi_,dst_roi_final_;
     int num_bands_,actual_num_bands_;
     int weight_type_ = CV_16S;
-    void prepare(Rect dst_roi){
-        int num_bands = 4;
+    void prepare(Rect dst_roi,int num_bands){
         __android_log_print(ANDROID_LOG_DEBUG,"Composer","Prepare Pyramid");
         dst_roi_final_ = dst_roi;
-
+        actual_num_bands_ = num_bands;
         // Crop unnecessary bands
         double max_len = static_cast<double>(max(dst_roi.width, dst_roi.height));
         num_bands_ = min(actual_num_bands_, static_cast<int>(ceil(log(max_len) / log(2.0))));
-
+        __android_log_print(ANDROID_LOG_DEBUG,"Composer","Pyramid %d band",num_bands_);
         // Add border to the final image, to ensure sizes are divided by (1 << num_bands_)
         dst_roi.width += ((1 << num_bands_) - dst_roi.width % (1 << num_bands_)) % (1 << num_bands_);
         dst_roi.height += ((1 << num_bands_) - dst_roi.height % (1 << num_bands_)) % (1 << num_bands_);
@@ -288,14 +289,19 @@ namespace composer {
         restoreImageFromLaplacePyr(dst_pyr_laplace_);
         dst_ = dst_pyr_laplace_[0];
         dst_ = dst_(Range(0, dst_roi_final_.height), Range(0, dst_roi_final_.width));
-        dst_mask_ = dst_band_weights_[0] > WEIGHT_EPS;
+
+        compare(dst_band_weights_[0], WEIGHT_EPS, dst_mask_, CMP_GT);
+
+
         dst_mask_ = dst_mask_(Range(0, dst_roi_final_.height), Range(0, dst_roi_final_.width));
+        imwrite("/sdcard/stitch/band_weight.jpg",dst_mask_);
         dst_pyr_laplace_.clear();
         dst_band_weights_.clear();
 
         __android_log_print(ANDROID_LOG_DEBUG,"C++ Composer","Process");
 
-        dst_.setTo(Scalar::all(0), dst_mask_ == 0);
+        dst_.setTo(Scalar::all(0), dst_mask_ == 0 );
+
 
         dst.create(dst_.size(),CV_8UC4);
 
@@ -343,9 +349,15 @@ namespace composer {
 
         int channels_setting[] = {2,0, 1,1, 0,2, 3,3};
         __android_log_print(ANDROID_LOG_DEBUG,"C++ Composer","debug %d %d %d",dst_dt_.type(),uchar_dst.type(),dst_mask_.type());
-        mixChannels(out,2,&dst,1,channels_setting,4);
-        //        dst = dst_;
+        //mixChannels(out,2,&dst,1,channels_setting,4);
+        __android_log_print(ANDROID_LOG_DEBUG,"C++ Composer","debug %d %d %d",dst_dt_.type(),uchar_dst.type(),dst_mask_.type());
 
+//      dst = dst_;
+        char img_file_name[50];
+        sprintf(img_file_name,"/sdcard/stitch/pyramid%d.jpg",num_bands_);
+        imwrite(img_file_name,dst_);
+
+        dst_.assignTo(dst);
         dst_dt_.release();
         dst_mask_.release();
         dst_.release();
@@ -358,7 +370,7 @@ namespace composer {
     Rect dst_roi_;
     Mat dst_weight_map_, weight_map_;
     float sharpness_ = 0.02f;
-    void prepare(Rect dst_roi) {
+    void prepare(Rect dst_roi,int not_used) {
         __android_log_print(ANDROID_LOG_DEBUG, "Composer", "Prepare Alpha");
         dst_.create(dst_roi.size(), CV_16SC3);
         dst_.setTo(Scalar::all(0));
@@ -446,7 +458,7 @@ namespace composer {
         Mat out[] = {dst_,temp};
         mixChannels(out,2,&dst,1,channels_setting,4);
 //        dst = dst_;
-
+        imwrite("/sdcard/stitch/alpha.jpg",dst_);
         dst_mask = temp;
         dst_dt_.release();
         dst_.release();

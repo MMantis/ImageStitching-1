@@ -75,7 +75,7 @@ using namespace cv;
 using namespace cv::detail;
 namespace composer{
 
-    void prepare(Rect dst_roi);
+    void prepare(Rect dst_roi,int num_band);
     void feed(Mat img,Mat mask,Point tl);
     void process(Mat &dst,Mat &dst_mask);
 
