@@ -49,7 +49,7 @@ public class StitchObject {
             "#version 310 es\n" +
             "#define M_PI 3.1415926535897932384626433832795\n" +
             "#define SCALE 1468.803406*1.4\n" +
-            "#define WINDOW_SIZE 200.0\n"+
+            "#define WINDOW_SIZE 10.0\n"+
             "precision highp float;\n" +
             "precision highp int;\n" +
             "uniform int length;\n" +
@@ -151,23 +151,23 @@ public class StitchObject {
             "       map = mapBackward(vec3(diff.x,diff.y,1),SCALE,k_rinv[10]);" +
             "       color = texelFetch(sTexture[10], ivec2(round(map.x),round(map.y)) ,0);\n" +
             "   }\n" +
-            "   if(int(map.x) < 0 && int(map.x) >= size[3].x && int(map.y) < 0 && int(map.y) >= size[3].y ){" +
+            "   if(map.x < 0.0 || map.x >= float(size[ndx].x) || map.y < 0.0 || map.y >= float(size[ndx].y) ){" +
             "       color = vec4(0,0,0,0);" +
             "   }" +
             "   else{" +
-            "       int x = int(map.x);" +
-            "       if(x > size[ndx].x - int(map.x)){" +
-            "           x = size[ndx].x - int(map.x);" +
+            "       float x = map.x;" +
+            "       if(x > float(size[ndx].x) - map.x){" +
+            "           x = float(size[ndx].x) - map.x;" +
             "       }" +
-            "       int y = int(map.y);" +
-            "       if(y > size[ndx].y - int(map.y)){" +
-            "           y = size[ndx].y - int(map.y);" +
+            "       float y = map.y;" +
+            "       if(y > float(size[ndx].y) - map.y){" +
+            "           y = float(size[ndx].y) - map.y;" +
             "       }" +
             "       if(y > x){" +
-            "           blend_a = (float(x)/float(size[ndx].x)) * (float(size[ndx].x)/WINDOW_SIZE);\n" +
+            "           blend_a = (x/WINDOW_SIZE);\n" +
             "       }" +
             "       else{" +
-            "           blend_a = (float(y)/float(size[ndx].y)) * (float(size[ndx].y)/WINDOW_SIZE);\n" +
+            "           blend_a = (y/WINDOW_SIZE);\n" +
             "       }" +
             "   }" +
             "   if(blend_a > 1.0){" +
