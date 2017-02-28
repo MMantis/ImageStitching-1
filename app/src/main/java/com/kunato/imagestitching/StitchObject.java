@@ -49,7 +49,7 @@ public class StitchObject {
             "#version 310 es\n" +
             "#define M_PI 3.1415926535897932384626433832795\n" +
             "#define SCALE 1468.803406*1.4\n" +
-            "#define WINDOW_SIZE 10.0\n"+
+            "#define WINDOW_SIZE 200.0\n"+
             "precision highp float;\n" +
             "precision highp int;\n" +
             "uniform int length;\n" +
