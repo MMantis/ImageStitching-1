@@ -1,5 +1,5 @@
 LOCAL_PATH  := $(call my-dir)
-OPENCV_PATH := /home/kunato/Downloads/OpenCV-3-android-sdk/sdk/native/jni/
+OPENCV_PATH := /home/kunato/project-lib/OpenCV-3-android-sdk/sdk/native/jni/
 CERES_PATH  := /home/kunato/project-lib/ceres-solver/
 EIGEN_PATH  := /usr/include/eigen3/
 GLOG_PATH   := /home/kunato/project-lib/ceres-solver/internal/ceres/miniglog
@@ -38,7 +38,6 @@ LOCAL_SRC_FILES :=				\
 	BundleCV.cpp
 
 LOCAL_MODULE := native
-LOCAL_SHARED_LIBRARIES += nonfree
 LOCAL_STATIC_LIBRARIES += ceres
 LOCAL_CFLAGS := -O3 -ffast-math
 LOCAL_LDLIBS := -llog -ldl
