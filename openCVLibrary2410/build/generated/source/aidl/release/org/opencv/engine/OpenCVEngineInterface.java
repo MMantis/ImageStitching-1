@@ -1,6 +1,6 @@
 /*
  * This file is auto-generated.  DO NOT MODIFY.
- * Original file: /home/kunato/StudioProjects/ImageStitching/openCVLibrary2410/src/main/aidl/org/opencv/engine/OpenCVEngineInterface.aidl
+ * Original file: /home/kunato/ImageStitching/openCVLibrary2410/src/main/aidl/org/opencv/engine/OpenCVEngineInterface.aidl
  */
 package org.opencv.engine;
 /**
