@@ -1,7 +1,7 @@
 LOCAL_PATH  := $(call my-dir)
 OPENCV_PATH := /home/kunato/project-lib/OpenCV-3-android-sdk/sdk/native/jni/
 CERES_PATH  := /home/kunato/project-lib/ceres-solver/
-EIGEN_PATH  := /usr/include/eigen3/
+EIGEN_PATH  := /usr/local/include/eigen3/
 GLOG_PATH   := /home/kunato/project-lib/ceres-solver/internal/ceres/miniglog
 
 include $(CLEAR_VARS)
