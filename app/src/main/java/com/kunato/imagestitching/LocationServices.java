@@ -129,7 +129,8 @@ public class LocationServices {
         mSensorManager = (SensorManager) mMainController.getActivity().getSystemService(Context.SENSOR_SERVICE);
         mSensorManager.registerListener(mCompassListener, mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_GAME);
         mSensorManager.registerListener(mCompassListener, mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorManager.SENSOR_DELAY_GAME);
-        mSensorManager.registerListener(mCompassListener,mSensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR),SensorManager.SENSOR_DELAY_GAME);
+        mSensorManager.registerListener(mCompassListener, mSensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR), SensorManager.SENSOR_DELAY_GAME);
+        mSensorManager.registerListener(mCompassListener, mSensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION), SensorManager.SENSOR_DELAY_NORMAL);
     }
 
     public LocationServices(MainController controller) {
