@@ -24,6 +24,7 @@ public class ImageStitchingNative {
     private Context context;
     private Bitmap mUploadingBitmap = null;
     private float[] mBitmapArea;
+    private boolean mStop = false;
     private ImageStitchingNative(){
     }
 
@@ -92,7 +93,7 @@ public class ImageStitchingNative {
         float[] refinedQuad = Util.matrixToQuad(refinedMatArray);
         Factory.mainController.updateQuaternion(refinedQuad, Factory.mainController.mDeltaQuaternion);
         //4 Image
-        if(mPictureSize >= 3) {
+        if(mStop) {
             //Send ROI to GPU
             Factory.getFactory(null).getGlRenderer().getStitch().setROI(roiData, k_rinvData,mPictureSize);
 
@@ -163,6 +164,9 @@ public class ImageStitchingNative {
     public void setContext(Context context){
 
         this.context = context;
+    }
+    public void stop(){
+        mStop = true;
     }
 
     public static ImageStitchingNative getNativeInstance(){
