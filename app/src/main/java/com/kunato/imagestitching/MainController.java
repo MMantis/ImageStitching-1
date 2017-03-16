@@ -274,13 +274,13 @@ public class MainController extends GLSurfaceView {
         if (mFirstRun) {
             Object[] locationAndRotation = mLocationServices.getLocation();
             Location deviceLocation = (Location) locationAndRotation[0];
-            final float[] cameraRotation = (float[]) locationAndRotation[1];
+            final int angle = (int) locationAndRotation[1];
 //            Location mockLocation = new Location("");
 //            mockLocation.setLatitude(34.732285);
 //            mockLocation.setLongitude(135.735202);
 
 
-            mGLRenderer.initARObject(cameraRotation, deviceLocation, mAngleAdjustment);
+            mGLRenderer.initARObject(angle, deviceLocation, mAngleAdjustment);
             mFirstRun = false;
             mQuaternion[0] = 0f;
             mQuaternion[1] = 0f;

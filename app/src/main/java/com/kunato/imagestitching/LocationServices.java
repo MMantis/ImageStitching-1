@@ -35,7 +35,7 @@ import java.util.Date;
  * Created by kunato on 4/7/16.
  */
 public class LocationServices {
-    float[] mCameraRotation = new float[16];
+    int mCurrentAngle = 0;
     private SensorEventListener mCompassListener = new SensorEventListener() {
         static final float RAD_2_DEGREE = (float) (180.0f / Math.PI);
         float[] mGravity;
@@ -52,14 +52,13 @@ public class LocationServices {
             if (event.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR) {
 //                SensorManager.getRotationMatrixFromVector(mCameraRotation,event.values);
             }
+            if(event.sensor.getType() == Sensor.TYPE_ORIENTATION){
+                mCurrentAngle = (int) event.values[0];
+            }
             if (mGravity == null || mGeomagnetic == null)
                 return;
-            float[] I = new float[16];
-            SensorManager.getRotationMatrix(mCameraRotation, I, mGravity, mGeomagnetic);
-            float[] mOrientation = new float[3];
-            SensorManager.getOrientation(mCameraRotation, mOrientation);
             if(mLastLocation!= null)
-                ((MainActivity)mMainController.getActivity()).getTextView().setText(Math.round(mOrientation[0] * 180.0 / Math.PI)+" ["+mLastLocation.getAccuracy()+"]");
+                ((MainActivity)mMainController.getActivity()).getTextView().setText(mCurrentAngle+" ["+mLastLocation.getAccuracy()+"]");
         }
 
         @Override
@@ -164,11 +163,11 @@ public class LocationServices {
 //        if (mMainController.getActivity().checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && mMainController.getActivity().checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
 //            mMainController.permissionRequest();
 //        }
-        if (mConnected && mCameraRotation != null) {
+        if (mConnected) {
 //            mLastLocation = com.google.android.gms.location.LocationServices.FusedLocationApi.getLastLocation(
 //                    mGoogleApiClient);
             stopLocationUpdate();
-            Object[] returnObject = {mLastLocation, mCameraRotation};
+            Object[] returnObject = {mLastLocation, mCurrentAngle};
             mSensorManager.unregisterListener(mCompassListener);
             return returnObject;
         }

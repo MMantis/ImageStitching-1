@@ -78,10 +78,6 @@ public class ARObject {
             ,0,1f,0,0f
             ,0,0,1f,0f
             ,0,0,0,1f};
-    private float[] mCameraRotation = {0.51611745f, -0.09066901f, 0.8517054f, 0.0f,
-            0.8552484f, 0.10867332f, -0.50669557f, 0.0f,
-            -0.046616063f, 0.9899339f, 0.1336327f, 0.0f,
-            0.0f, 0.0f, 0.0f, 1.0f};
     private float[] mAdjustRotation = {1f,0,0,0
             ,0,1f,0,0f
             ,0,0,1f,0f
@@ -162,17 +158,14 @@ public class ARObject {
 
 
     }
-    public void setCameraRotation(float[] cameraRotation, Location deviceLocation, float adjustment){
+    public void setCameraRotation(int angle, Location deviceLocation, float adjustment){
         Log.d("ARObject","SetCameraRotation");
-        mCameraRotation = cameraRotation.clone();
         double bearing = deviceLocation.bearingTo(mLocalLocation);
-        float[] mOrientation = new float[3];
-        SensorManager.getOrientation(cameraRotation, mOrientation);
         Log.d("ARObject","Location : ("+deviceLocation.getLatitude()+","+deviceLocation.getLongitude()+")");
-        Log.d("ARObject","Object : "+mNumber +" , Bearing degree ; "+bearing + " , Plus devices degree ; "+ mOrientation[0] * 180.0 / Math.PI);
+        Log.d("ARObject","Object : "+mNumber +" , Bearing degree ; "+bearing + " , Plus devices degree ; "+ angle);
         bearing *= Math.PI / 180.0;
         mCameraPositionSet = true;
-        mRawAngle = (-mOrientation[0] + bearing);
+        mRawAngle = (-angle + bearing);
         double DiffAngle = mRawAngle + adjustment;
         mAdjustRotation[0] = (float) Math.sin(DiffAngle - Math.PI/2.0);
         mAdjustRotation[2] = (float) Math.cos(DiffAngle - Math.PI/2.0);
@@ -263,7 +256,6 @@ public class ARObject {
         GLES31.glUniformMatrix4fv(mViewMatrixHandle, 1, false, viewMatrix, 0);
         GLES31.glUniform4fv(mTranslationVectorHandle, 1 , mTranslationVector,0);
         GLES31.glUniformMatrix4fv(mProjectionMatrixHandle, 1 ,false, projectionMatrix,0);
-        GLES31.glUniformMatrix4fv(mRotationMatrixHandle, 1, false, mCameraRotation , 0);
         GLES31.glUniformMatrix4fv(mScaleMatrixHandle, 1, true, mScaleRotation, 0);
         GLES31.glUniformMatrix4fv(mAdjustMatrixHandle,1, true, mAdjustRotation,0);
 
