@@ -97,7 +97,7 @@ public class SphereShape {
                 //change u (s)
                 // texture u,v
                 vLineBuffer[vertexBase + 3] = (float) j/ (float) nSlices;
-                vLineBuffer[vertexBase + 4] = (float) i / (float)nSlices;
+                vLineBuffer[vertexBase + 4] = (float) i /(float) nSlices;
 //                Log.i("Texture","("+((float) j / (float) nSlices)+","+-((1.0f - i) / (float)nSlices)+")");
             }
             mVertices.put(vLineBuffer, 0, vLineBuffer.length);

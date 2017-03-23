@@ -206,6 +206,8 @@ public class MainController extends GLSurfaceView {
     private Factory mFactory;
     LocationServices mLocationServices;
     private float mAngleAdjustment = 0.0f;
+    private boolean firstFrame = true;
+
     public MainController(Context context) {
         super(context);
         mFactory = Factory.getFactory(this);
@@ -339,7 +341,12 @@ public class MainController extends GLSurfaceView {
         else {
             if(!mAsyncRunning) {
                 mRunning = true;
-                ImageStitchingNative.getNativeInstance().stop();
+                Log.d("MainController","Stop");
+                if(!firstFrame)
+                    ImageStitchingNative.getNativeInstance().stop();
+                else{
+                    firstFrame = false;
+                }
             }
             Log.d("MainController","Button Press, Still Running");
          }

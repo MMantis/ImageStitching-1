@@ -175,26 +175,24 @@ public class GLRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
         mCanvasObjectProcessed.draw(mViewCanvasMatrix,mHomography);
 
         if(mUsingOldMatrix){
-            mSphere.draw(mPreviousRotMatrix,mProjectionMatrix,mFadeAlpha);
+            mSphere.draw(mPreviousRotMatrix,mProjectionMatrix,1.0f);
             if(mFadeAlpha > 0.0){
                 mFadeAlpha -= 1f/20f;
             }
-            if(mFadeAlpha < 0.3){
-                for(int i = 0 ; i < mARObject.size() ; i++)
-                    mARObject.get(i).draw(mRotationMatrix,mProjectionMatrix);
-            }
+            for(int i = 0 ; i < mARObject.size() ; i++)
+                mARObject.get(i).draw(mPreviousRotMatrix,mProjectionMatrix);
+
 
         }
         else{
             if(mFadeAlpha < 1.0){
                 mFadeAlpha += 1f/20f;
             }
-            mSphere.draw(mRotationMatrix,mProjectionMatrix,mFadeAlpha);
+            mSphere.draw(mRotationMatrix,mProjectionMatrix,1.0f);
             for(int i = 0 ; i < mARObject.size() ; i++)
                 mARObject.get(i).draw(mRotationMatrix,mProjectionMatrix);
         }
         mSphere.mRealRender = false;
-
         GLES31.glFlush();
     }
 
