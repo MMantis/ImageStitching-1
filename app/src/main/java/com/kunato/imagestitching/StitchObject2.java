@@ -178,13 +178,16 @@ public class StitchObject2 {
     private int[] sizes = new int[NUMBER_OF_TEXTURE*2];
     private int[] mFBO = new int[1];
     private int[] mSFBO = new int[1];
+    private int[] mLastFBO = new int[3];
+    private int[] mLastSFBO = new int[3];
     private int mCurrentSize = 2;
-    private int mLastSSDCount = 0;
-    private int mFBOID;
-    private int mFBOTex;
-    private int mSFBOID;
-    private int mSFBOTex;
-
+    private int mFBOID = 0;
+    private int mFBOTex = 0;
+    private int mFBORBuffer = 0;
+    private int[] mSFBOID = new int[2];
+    private int[] mSFBOTex = new int[2];
+    private int[] mSFBORBuffer = new int[2];
+    private int mLastSFBOIndex = 0;
     private Bitmap[] mCPUBitmap = new Bitmap[NUMBER_OF_TEXTURE];
     int[] cof = new int[NUMBER_OF_TEXTURE*2];
     int[] sof = new int[NUMBER_OF_TEXTURE*2];
@@ -213,22 +216,41 @@ public class StitchObject2 {
         pTexCoord.put ( ttmp );
         pTexCoord.position(0);
         this.context = context;
-
         GLES31.glGenTextures(NUMBER_OF_TEXTURE, this.mTextures, 0);
+        generateFBO();
+        generateSFBO(0);
+        generateSFBO(1);
+
 
 
     }
-
-    public int createFBO(){
-        //generate fbo id
+    public void generateFBO(){
+        GLES31.glDeleteFramebuffers(1,mLastFBO,0);
+        GLES31.glDeleteTextures(1,mLastFBO,1);
+        GLES31.glDeleteBuffers(1,mLastFBO,2);
+        mLastFBO[0] = mFBOID;
+        mLastFBO[1] = mFBOTex;
+        mLastFBO[2] = mFBORBuffer;
         GLES31.glGenFramebuffers(1, mFBO, 0);
         mFBOID = mFBO[0];
-        //generate texture
         GLES31.glGenTextures(1, mFBO, 0);
         mFBOTex = mFBO[0];
-        //generate render buffer
         GLES31.glGenRenderbuffers(1, mFBO, 0);
-        int renderBufferId = mFBO[0];
+        mFBORBuffer = mFBO[0];
+    }
+    public void generateSFBO(int i){
+        GLES31.glDeleteFramebuffers(1,mLastSFBO,0);
+        GLES31.glDeleteTextures(1,mLastSFBO,1);
+        GLES31.glDeleteBuffers(1,mLastSFBO,2);
+        GLES31.glGenFramebuffers(1, mSFBO, 0);
+        mSFBOID[i] = mSFBO[0];
+        GLES31.glGenTextures(1, mSFBO, 0);
+        mSFBOTex[i] = mSFBO[0];
+        GLES31.glGenRenderbuffers(1, mSFBO, 0);
+        mSFBORBuffer[i] = mSFBO[0];
+    }
+
+    public int createFBO(){
         //Bind Frame buffer
         GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, mFBOID);
         //Bind texture
@@ -240,12 +262,12 @@ public class StitchObject2 {
         GLES31.glTexParameteri(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_MAG_FILTER, GLES31.GL_NEAREST);
         GLES31.glTexParameteri(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_MIN_FILTER, GLES31.GL_NEAREST);
         //Bind render buffer and define buffer dimension
-        GLES31.glBindRenderbuffer(GLES31.GL_RENDERBUFFER, renderBufferId);
+        GLES31.glBindRenderbuffer(GLES31.GL_RENDERBUFFER, mFBORBuffer);
         GLES31.glRenderbufferStorage(GLES31.GL_RENDERBUFFER, GLES31.GL_DEPTH_COMPONENT16, mWidth, mHeight);
         //Attach texture FBO color attachment
         GLES31.glFramebufferTexture2D(GLES31.GL_FRAMEBUFFER, GLES31.GL_COLOR_ATTACHMENT0, GLES31.GL_TEXTURE_2D, mFBOTex, 0);
         //Attach render buffer to depth attachment
-        GLES31.glFramebufferRenderbuffer(GLES31.GL_FRAMEBUFFER, GLES31.GL_DEPTH_ATTACHMENT, GLES31.GL_RENDERBUFFER, renderBufferId);
+        GLES31.glFramebufferRenderbuffer(GLES31.GL_FRAMEBUFFER, GLES31.GL_DEPTH_ATTACHMENT, GLES31.GL_RENDERBUFFER, mFBORBuffer);
 
         int[] wh = new int[2];
         GLES31.glGetTexLevelParameteriv(GLES31.GL_TEXTURE_2D, 0, GLES31.GL_TEXTURE_WIDTH, wh, 0);
@@ -258,19 +280,10 @@ public class StitchObject2 {
         return mFBO[0];
     }
     public int createSFBO(){
-        //generate fbo id
-        GLES31.glGenFramebuffers(1, mSFBO, 0);
-        mSFBOID = mSFBO[0];
-        //generate texture
-        GLES31.glGenTextures(1, mSFBO, 0);
-        mSFBOTex = mSFBO[0];
-        //generate render buffer
-        GLES31.glGenRenderbuffers(1, mSFBO, 0);
-        int renderBufferId = mSFBO[0];
         //Bind Frame buffer
-        GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, mSFBOID);
+        GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, mSFBOID[mLastSFBOIndex]);
         //Bind texture
-        GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, mSFBOTex);
+        GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, mSFBOTex[mLastSFBOIndex]);
         //Define texture parameters
         GLES31.glTexImage2D(GLES31.GL_TEXTURE_2D, 0, GLES31.GL_RGBA, mWidth, mHeight, 0, GLES31.GL_RGBA, GLES31.GL_UNSIGNED_BYTE, null);
         GLES31.glTexParameteri(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_WRAP_S, GLES31.GL_MIRRORED_REPEAT);
@@ -278,12 +291,12 @@ public class StitchObject2 {
         GLES31.glTexParameteri(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_MAG_FILTER, GLES31.GL_NEAREST);
         GLES31.glTexParameteri(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_MIN_FILTER, GLES31.GL_NEAREST);
         //Bind render buffer and define buffer dimension
-        GLES31.glBindRenderbuffer(GLES31.GL_RENDERBUFFER, renderBufferId);
+        GLES31.glBindRenderbuffer(GLES31.GL_RENDERBUFFER, mSFBORBuffer[mLastSFBOIndex]);
         GLES31.glRenderbufferStorage(GLES31.GL_RENDERBUFFER, GLES31.GL_DEPTH_COMPONENT16, mWidth, mHeight);
         //Attach texture FBO color attachment
-        GLES31.glFramebufferTexture2D(GLES31.GL_FRAMEBUFFER, GLES31.GL_COLOR_ATTACHMENT0, GLES31.GL_TEXTURE_2D, mSFBOTex, 0);
+        GLES31.glFramebufferTexture2D(GLES31.GL_FRAMEBUFFER, GLES31.GL_COLOR_ATTACHMENT0, GLES31.GL_TEXTURE_2D, mSFBOTex[mLastSFBOIndex], 0);
         //Attach render buffer to depth attachment
-        GLES31.glFramebufferRenderbuffer(GLES31.GL_FRAMEBUFFER, GLES31.GL_DEPTH_ATTACHMENT, GLES31.GL_RENDERBUFFER, renderBufferId);
+        GLES31.glFramebufferRenderbuffer(GLES31.GL_FRAMEBUFFER, GLES31.GL_DEPTH_ATTACHMENT, GLES31.GL_RENDERBUFFER, mSFBORBuffer[mLastSFBOIndex]);
 
         int[] wh = new int[2];
         GLES31.glGetTexLevelParameteriv(GLES31.GL_TEXTURE_2D, 0, GLES31.GL_TEXTURE_WIDTH, wh, 0);
@@ -320,9 +333,16 @@ public class StitchObject2 {
     }
 
     public void loadBitmap(){
+
         GLES31.glActiveTexture(GLES31.GL_TEXTURE_2D);
-        this.mTextures[0] = this.mSFBOTex;
-        GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, this.mTextures[1]);
+        if(mLastSFBOIndex == 1){
+            this.mTextures[0] = this.mSFBOTex[0];
+        }
+        else{
+
+            this.mTextures[0] = this.mSFBOTex[1];
+        }
+        GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, this.mTextures[0]);
         GLES31.glActiveTexture(GLES31.GL_TEXTURE0);
         GLES31.glTexParameterf(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_MIN_FILTER, GLES31.GL_NEAREST);
         GLES31.glTexParameterf(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_MAG_FILTER, GLES31.GL_NEAREST);
@@ -342,8 +362,10 @@ public class StitchObject2 {
         GLES31.glGenerateMipmap(GLES31.GL_TEXTURE_2D);
        // mCPUBitmap[1].recycle();
         updateParam();
+
         createFBO();
         createSFBO();
+
     }
 
     public void bitmapToCPU(Bitmap bitmap,int index){
@@ -396,7 +418,13 @@ public class StitchObject2 {
         sizes = sof;
     }
     public int getFBOTexture(){
-        return mSFBOTex;
+        if(mLastSFBOIndex == 1){
+            return this.mSFBOTex[0];
+        }
+        else{
+
+            return this.mSFBOTex[1];
+        }
     }
 
     public void drawTOFBO() {
@@ -491,7 +519,7 @@ public class StitchObject2 {
         GLES31.glVertexAttribPointer(tch, 2, GLES31.GL_FLOAT, false, 4*2, pTexCoord );
         GLES31.glEnableVertexAttribArray(ph);
         GLES31.glEnableVertexAttribArray(tch);
-        GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, mSFBOID);
+        GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, mSFBOID[mLastSFBOIndex]);
         GLES31.glActiveTexture(GLES31.GL_TEXTURE3);
         GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, mFBOTex );
         GLES31.glUniform1i(th, 0);
@@ -533,7 +561,12 @@ public class StitchObject2 {
         Log.d("GPU Stitching","Stitch Complete for "+mCount+" Images.");
         glRenderer.getSphere().mReadyToUpdate = true;
         GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, 0);
-
+        if(mLastSFBOIndex == 1){
+            mLastSFBOIndex = 0;
+        }
+        else{
+            mLastSFBOIndex = 1;
+        }
     }
 
 
