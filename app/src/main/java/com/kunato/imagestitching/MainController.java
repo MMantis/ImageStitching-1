@@ -41,6 +41,13 @@ import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
 import static android.hardware.camera2.CaptureRequest.*;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -174,6 +181,7 @@ public class MainController extends GLSurfaceView {
         }
 
     };
+    public static final boolean RESTORE_LOCATION = false;
 
 
 
@@ -253,7 +261,6 @@ public class MainController extends GLSurfaceView {
         mLocationServices = new LocationServices(this);
         mLocationServices.start();
 
-
     }
 
     public void surfaceCreated ( SurfaceHolder holder ) {
@@ -267,18 +274,65 @@ public class MainController extends GLSurfaceView {
     }
 
     public float[] mRotmat = new float[16];
+    public void writeLocation(Location location,int angle){
+        double latitude = location.getLatitude();
+        double longitude = location.getLongitude();
+        try {
+            FileOutputStream fos = new FileOutputStream("/sdcard/stitch/location.bin");
 
+            DataOutputStream dos = new DataOutputStream(fos);
+
+            dos.writeDouble(latitude);
+            dos.writeDouble(longitude);
+            dos.writeInt(angle);
+            dos.flush();
+            dos.close();
+            fos.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+    public Object[] tryReadLocation(){
+        try {
+            File file = new File("/sdcard/stitch/location.bin");
+            if(!file.exists()){
+                return null;
+            }
+            FileInputStream fis = new FileInputStream(file);
+            DataInputStream dis = new DataInputStream(fis);
+            double lat2 = dis.readDouble();
+            double lon2 = dis.readDouble();
+            int ang2 = dis.readInt();
+            fis.close();
+            dis.close();
+            Object[] obj = new Object[2];
+            Location l = new Location("");
+            l.setLatitude(lat2);
+            l.setLongitude(lon2);
+            obj[0] = l;
+            obj[1] = ang2;
+            return obj;
+        } catch (IOException e) {
+            return null;
+        }
+    }
     public void doStitching(){
         SensorManager.getRotationMatrixFromVector(mRotmat,mQuaternion);
         AsyncTask<Mat, Integer, Boolean> imageStitchingTask = new ImageStitchingTask();
         if (mFirstRun) {
             Object[] locationAndRotation = mLocationServices.getLocation();
-            Location deviceLocation = (Location) locationAndRotation[0];
-            final int angle = (int) locationAndRotation[1];
-//            Location mockLocation = new Location("");
-//            mockLocation.setLatitude(34.732285);
-//            mockLocation.setLongitude(135.735202);
+            Location deviceLocation;
+            int angle;
+            Object[] readLocation = tryReadLocation();
+            if(readLocation == null || !RESTORE_LOCATION){
+                Log.d("MainController","New Location");
 
+
+                deviceLocation = (Location) readLocation[0];
+                angle = (int) readLocation[1];
+            }
+            Log.d("MainController","Use Location : "+deviceLocation.getLatitude()+" : "+deviceLocation.getLongitude()+" Angle : "+angle);
 
             mGLRenderer.initARObject(angle, deviceLocation, mAngleAdjustment);
             mFirstRun = false;
@@ -689,6 +743,7 @@ public class MainController extends GLSurfaceView {
 
         }
     }
+
 
 
     private class ImageAligningTask extends AsyncTask<Mat, Integer, Boolean> {
