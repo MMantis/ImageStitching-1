@@ -325,10 +325,14 @@ public class MainController extends GLSurfaceView {
             Location deviceLocation;
             int angle;
             Object[] readLocation = tryReadLocation();
-            if(readLocation == null || !RESTORE_LOCATION){
-                Log.d("MainController","New Location");
-
-
+            if(readLocation == null || !RESTORE_LOCATION) {
+                Log.d("MainController", "New Location");
+                deviceLocation = (Location) locationAndRotation[0];
+                angle = (int) locationAndRotation[1];
+                writeLocation(deviceLocation,angle);
+            }
+            else{
+                Log.d("MainController","Use Location");
                 deviceLocation = (Location) readLocation[0];
                 angle = (int) readLocation[1];
             }
