@@ -27,6 +27,7 @@ import android.hardware.SensorManager;
 import android.location.Location;
 import android.opengl.GLES31;
 import android.opengl.GLUtils;
+import android.os.Parcel;
 import android.util.Log;
 
 import java.nio.ByteBuffer;
