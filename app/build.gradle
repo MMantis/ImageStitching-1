@@ -5,7 +5,7 @@ android {
     buildToolsVersion "25.0.2"
 
     defaultConfig {
-        applicationId "com.kunato.iar"
+        applicationId "com.kunato.iar.optflow"
         minSdkVersion 22
         targetSdkVersion 22
         externalNativeBuild {
