@@ -433,7 +433,8 @@ public class MainController extends GLSurfaceView {
             if(!mAsyncRunning)
                 mRunning = true;
             Log.d("MainController","Button Press, Still Running");
-         }
+            Factory.getFactory(null).getGlRenderer().getSphere().updateArea(new float[]{0,0,8000,4000});
+        }
     }
 
     public void Resume() {

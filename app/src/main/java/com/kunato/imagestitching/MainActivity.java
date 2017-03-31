@@ -26,7 +26,7 @@ public class MainActivity extends FragmentActivity {
         SeekBar isoSeek = new SeekBar(this);
         SeekBar fSeek = new SeekBar(this);
         textView = new TextView(this);
-        b.setText("AE LOCK");
+        b.setText("Start");
         textView.setText("Test");
         textView.setTextColor(Color.GREEN);
 
@@ -39,7 +39,7 @@ public class MainActivity extends FragmentActivity {
             @Override
             public void onClick(View v) {
 
-                mView.runProcess(mFirstTime);
+                mView.runProcess(false);
                 if(mFirstTime){
                     b.setText("Capture : 0");
                     mFirstTime = false;

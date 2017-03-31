@@ -126,12 +126,7 @@ public class GLRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
     }
     //Core function
     public void onDrawFrame ( GL10 unused ) {
-        mFrame++;
-        if(System.nanoTime() - mStartTime >= 1000000000){
-            Log.v("FPS","fps : "+mFrame);
-            mFrame = 0;
-            mStartTime = System.nanoTime();
-        }
+
 
         GLES31.glClear(GLES31.GL_COLOR_BUFFER_BIT);
         GLES31.glClear(GLES31.GL_DEPTH_BUFFER_BIT);
@@ -158,21 +153,10 @@ public class GLRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
 
         //multiply MM(retMat, retMatOffset, mat1 * mat2 (includeOffset))
 //        mCanvasObject.draw(mMVPMatrix);
-        if(readInProgress){
-            mSphere.draw(mRotationMatrix,mProjectionMatrix,1.0f);
-            GLES31.glClear(GLES31.GL_COLOR_BUFFER_BIT);
-            GLES31.glClear(GLES31.GL_DEPTH_BUFFER_BIT);
-            mSphere.readPixel = false;
-            readInProgress = false;
-        }
-        //Test mRotation
-        mSphere.draw(mRotationMatrix,mProjectionMatrix,1.0f);
-        GLES31.glClear(GLES31.GL_COLOR_BUFFER_BIT);
-        GLES31.glClear(GLES31.GL_DEPTH_BUFFER_BIT);
 
+        //Test mRotation
         mSphere.mRealRender = true;
 
-        mCanvasObjectProcessed.draw(mViewCanvasMatrix,mHomography);
 
         if(mUsingOldMatrix){
             mSphere.draw(mPreviousRotMatrix,mProjectionMatrix,mFadeAlpha);
@@ -193,9 +177,14 @@ public class GLRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
             for(int i = 0 ; i < mARObject.size() ; i++)
                 mARObject.get(i).draw(mRotationMatrix,mProjectionMatrix);
         }
-        mSphere.mRealRender = false;
 
         GLES31.glFlush();
+        mFrame++;
+        if(System.nanoTime() - mStartTime >= 1000000000){
+            Log.v("FPS","fps : "+mFrame);
+            mFrame = 0;
+            mStartTime = System.nanoTime();
+        }
     }
 
     public void onSurfaceChanged ( GL10 unused, int width, int height ) {

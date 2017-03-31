@@ -32,7 +32,6 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.ShortBuffer;
-import java.util.Arrays;
 
 public class SphereObject {
 
@@ -61,8 +60,8 @@ public class SphereObject {
                     "//float width_ratio = 8976.0;\n" +
                     "//float height_ratio = 4488.0;\n" +
                     "//Nexus5x\n" +
-                    "float width_ratio = 9242.0*1.4;\n" +
-                    "float height_ratio = 4620.0*1.4;\n" +
+                    "float width_ratio = 8000.0;\n" +
+                    "float height_ratio = 4000.0;\n" +
                     "uniform float img_x;" +
                     "uniform float img_y;" +
                     "uniform float img_width;" +
@@ -75,7 +74,7 @@ public class SphereObject {
                     "}" +
                     "float diff_x = (((v_TexCoordinate.x*width_ratio) - (img_x))/(img_width));" +
                     "float diff_y = (((v_TexCoordinate.y*height_ratio) - (img_y))/(img_height));" +
-                    "gl_FragColor = texture2D(sTexture,vec2(diff_x,1.0-diff_y));" +
+                        "gl_FragColor = texture2D(sTexture,vec2(diff_x,diff_y));" +
                     "if(gl_FragColor.a != 0.0){" +
                     "gl_FragColor.a = alpha;" +
                     "}" +
@@ -120,7 +119,7 @@ public class SphereObject {
         mProgram = Util.loadShader(vertexShaderCode, fragmentShaderCode);
 
         createFBO();
-        loadGLTexture(context, R.drawable.pano, true);
+        loadGLTexture(context, R.drawable.ladybug_20170329, true);
 
 
     }
@@ -177,8 +176,8 @@ public class SphereObject {
 
     public void mockTexImage2D(Bitmap bitmap){
         mArea[0] = mArea[1] = 0;
-        mArea[2] = 9242;
-        mArea[3] = 4620;
+        mArea[2] = 0;
+        mArea[3] = 0;
         GLUtils.texImage2D(GLES31.GL_TEXTURE_2D, 0, bitmap, 0);
 //        mArea[0] = 3257f;
 //        mArea[1] = 1460f;
