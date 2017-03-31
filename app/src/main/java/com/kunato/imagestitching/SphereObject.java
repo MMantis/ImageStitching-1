@@ -119,7 +119,7 @@ public class SphereObject {
         mProgram = Util.loadShader(vertexShaderCode, fragmentShaderCode);
 
         createFBO();
-        loadGLTexture(context, R.drawable.ladybug_20170329, true);
+        loadGLTexture(context, R.drawable.ladybug_20170329_1, true);
 
 
     }
