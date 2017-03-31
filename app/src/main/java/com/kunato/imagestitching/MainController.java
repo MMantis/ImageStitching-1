@@ -769,7 +769,7 @@ public class MainController extends GLSurfaceView {
 
         protected void onPostExecute(Boolean bool) {
 
-            Log.i("GLSurface Connector","Algin Complete.");
+            Log.i("GLSurface Connector","Align Complete.");
 
         }
     }

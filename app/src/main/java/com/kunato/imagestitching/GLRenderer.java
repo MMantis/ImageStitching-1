@@ -140,8 +140,6 @@ public class GLRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
 //        GLU.gluProject(123.4349f, 0, -169.89357f, mRotationMatrix, 0, mProjectionMatrix, 0, viewport,0,out,0);
 //        Log.d("gluProject", "" + Arrays.toString(out));
         //draws
-        mStitch.drawTOFBO();
-
         synchronized(this) {
             if ( mUpdateST ) {
                 //choose whice texture to update
@@ -157,26 +155,9 @@ public class GLRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
         //Test mRotation
         mSphere.mRealRender = true;
 
-
-        if(mUsingOldMatrix){
-            mSphere.draw(mPreviousRotMatrix,mProjectionMatrix,mFadeAlpha);
-            if(mFadeAlpha > 0.0){
-                mFadeAlpha -= 1f/20f;
-            }
-            if(mFadeAlpha < 0.3){
-                for(int i = 0 ; i < mARObject.size() ; i++)
-                    mARObject.get(i).draw(mRotationMatrix,mProjectionMatrix);
-            }
-
-        }
-        else{
-            if(mFadeAlpha < 1.0){
-                mFadeAlpha += 1f/20f;
-            }
-            mSphere.draw(mRotationMatrix,mProjectionMatrix,mFadeAlpha);
-            for(int i = 0 ; i < mARObject.size() ; i++)
-                mARObject.get(i).draw(mRotationMatrix,mProjectionMatrix);
-        }
+        mSphere.draw(mRotationMatrix,mProjectionMatrix,mFadeAlpha);
+        for(int i = 0 ; i < mARObject.size() ; i++)
+            mARObject.get(i).draw(mRotationMatrix,mProjectionMatrix);
 
         GLES31.glFlush();
         mFrame++;
