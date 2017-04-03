@@ -181,7 +181,7 @@ public class MainController extends GLSurfaceView {
         }
 
     };
-    public static final boolean RESTORE_LOCATION = false;
+    public static boolean RESTORE_LOCATION = true;
 
 
 
@@ -332,7 +332,7 @@ public class MainController extends GLSurfaceView {
                 writeLocation(deviceLocation,angle);
             }
             else{
-                Log.d("MainController","Use Location");
+                Log.d("MainController","Used Location");
                 deviceLocation = (Location) readLocation[0];
                 angle = (int) readLocation[1];
             }
