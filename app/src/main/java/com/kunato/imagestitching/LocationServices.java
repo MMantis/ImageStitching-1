@@ -62,7 +62,6 @@ public class LocationServices {
 //            SensorManager.getRotationMatrix(mCameraRotation, I, mGravity, mGeomagnetic);
             float[] mOrientation = new float[3];
             SensorManager.getOrientation(mCameraRotation, mOrientation);
-            Log.d("LocationServices",mCurrentAngle+" + "+mOrientation[2]/Math.PI*180.0);
             if(mLastLocation!= null)
                 ((MainActivity)mMainController.getActivity()).getTextView().setText(mCurrentAngle+" ["+mLastLocation.getAccuracy()+"]");
         }

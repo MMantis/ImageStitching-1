@@ -92,7 +92,7 @@ public class MainController extends GLSurfaceView {
         }
 
     };
-    public static final boolean RESTORE_LOCATION = false;
+    public static boolean RESTORE_LOCATION = true;
 
     public static long MAX_SHUTTER_SPEED = 5000000;
     //Nexus5x = 1080,1920
@@ -339,7 +339,7 @@ public class MainController extends GLSurfaceView {
                 writeLocation(deviceLocation,angle);
             }
             else{
-                Log.d("MainController","Use Location");
+                Log.d("MainController","Used Location");
 
                 deviceLocation = (Location) readLocation[0];
                 angle = (int) readLocation[1];
