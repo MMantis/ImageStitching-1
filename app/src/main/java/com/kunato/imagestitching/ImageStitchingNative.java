@@ -103,6 +103,7 @@ public class ImageStitchingNative {
 
 
             Factory.getFactory(null).getGlRenderer().getSphere().updateArea(mBitmapArea);
+            Factory.getFactory(null).getGlRenderer().mShowAR = true;
         }
         return rtCode;
     }

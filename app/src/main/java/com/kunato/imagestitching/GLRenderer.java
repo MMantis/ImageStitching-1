@@ -33,6 +33,7 @@ public class GLRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
     private final float HEIGHT_WIDTH_RATIO = 1f;
     private boolean mFirstFrame = true;
     private List<ARObject> mARObject = new ArrayList<>();
+    public boolean mShowAR = false;
     public float[] mRotationMatrix = {1f,0,0,0
             ,0,1f,0,0
             ,0,0,1f,0
@@ -179,9 +180,10 @@ public class GLRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
             if(mFadeAlpha > 0.0){
                 mFadeAlpha -= 1f/20f;
             }
-            for(int i = 0 ; i < mARObject.size() ; i++)
-                mARObject.get(i).draw(mPreviousRotMatrix,mProjectionMatrix);
-
+            if(mShowAR) {
+                for (int i = 0; i < mARObject.size(); i++)
+                    mARObject.get(i).draw(mPreviousRotMatrix, mProjectionMatrix);
+            }
 
         }
         else{
