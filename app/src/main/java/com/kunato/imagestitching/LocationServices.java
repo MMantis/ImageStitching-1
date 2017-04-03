@@ -35,7 +35,8 @@ import java.util.Date;
  * Created by kunato on 4/7/16.
  */
 public class LocationServices {
-    private int mCurrentAngle = 0;
+    int mCurrentAngle = 0;
+    float[] mCameraRotation = new float[9];
     private SensorEventListener mCompassListener = new SensorEventListener() {
         static final float RAD_2_DEGREE = (float) (180.0f / Math.PI);
         float[] mGravity;
@@ -43,7 +44,6 @@ public class LocationServices {
 
         @Override
         public void onSensorChanged(SensorEvent event) {
-
             if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
                 mGravity = Util.lowPass(event.values,mGravity);
             }
@@ -51,22 +51,19 @@ public class LocationServices {
                 mGeomagnetic = Util.lowPass(event.values,mGeomagnetic);
             }
             if (event.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR) {
-//                SensorManager.getRotationMatrixFromVector(mCameraRotation,event.values);
+                SensorManager.getRotationMatrixFromVector(mCameraRotation,event.values);
             }
-
+            if(event.sensor.getType() == Sensor.TYPE_ORIENTATION){
+                mCurrentAngle = (int) event.values[0];
+            }
             if (mGravity == null || mGeomagnetic == null)
                 return;
 //            float[] I = new float[16];
 //            SensorManager.getRotationMatrix(mCameraRotation, I, mGravity, mGeomagnetic);
-
-//            SensorManager.getOrientation(mCameraRotation, mOrientation);
-            if(event.sensor.getType() == Sensor.TYPE_ORIENTATION){
-                Log.d("LocationServices"," angle : " + ((int)event.values[0]));
-                mCurrentAngle = (int) event.values[0];
-            }
-            if(mLastLocation!= null) {
-                ((MainActivity) mMainController.getActivity()).getTextView().setText(mCurrentAngle + " [" + mLastLocation.getAccuracy() + "]");
-            }
+            float[] mOrientation = new float[3];
+            SensorManager.getOrientation(mCameraRotation, mOrientation);
+            if(mLastLocation!= null)
+                ((MainActivity)mMainController.getActivity()).getTextView().setText(mCurrentAngle+" ["+mLastLocation.getAccuracy()+"]");
         }
 
         @Override
@@ -137,8 +134,8 @@ public class LocationServices {
         mSensorManager = (SensorManager) mMainController.getActivity().getSystemService(Context.SENSOR_SERVICE);
         mSensorManager.registerListener(mCompassListener, mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_GAME);
         mSensorManager.registerListener(mCompassListener, mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorManager.SENSOR_DELAY_GAME);
-        mSensorManager.registerListener(mCompassListener,mSensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR),SensorManager.SENSOR_DELAY_GAME);
-        mSensorManager.registerListener(mCompassListener,mSensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION),SensorManager.SENSOR_DELAY_NORMAL);
+        mSensorManager.registerListener(mCompassListener, mSensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR), SensorManager.SENSOR_DELAY_GAME);
+        mSensorManager.registerListener(mCompassListener, mSensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION), SensorManager.SENSOR_DELAY_NORMAL);
     }
 
     public LocationServices(MainController controller) {
