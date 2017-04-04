@@ -117,6 +117,15 @@ public class MainActivity extends AppCompatActivity {
                 break;
             case R.id.data1:
                 Log.d("App","Data1");
+                mView.setDataSet(1);
+                break;
+            case R.id.data2:
+                Log.d("App","Data2");
+                mView.setDataSet(2);
+                break;
+            case R.id.data3:
+                Log.d("App","Data3");
+                mView.setDataSet(3);
                 break;
             default:
                 return super.onOptionsItemSelected(item);

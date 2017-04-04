@@ -48,7 +48,6 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -92,7 +91,7 @@ public class MainController extends GLSurfaceView {
         }
 
     };
-    public static boolean RESTORE_LOCATION = true;
+
 
     public static long MAX_SHUTTER_SPEED = 5000000;
     //Nexus5x = 1080,1920
@@ -198,8 +197,10 @@ public class MainController extends GLSurfaceView {
         }
     }
 
-
+    public static boolean RESTORE_LOCATION = true;
     private RSProcessor mProcessor;
+
+
 
 
 
@@ -254,6 +255,9 @@ public class MainController extends GLSurfaceView {
     private Factory mFactory;
     LocationServices mLocationServices;
     private float mAngleAdjustment = 0.0f;
+    private boolean firstFrame = true;
+    public int mDataSet = 3;
+
     public MainController(Context context) {
         super(context);
         mFactory = Factory.getFactory(this);
@@ -268,10 +272,12 @@ public class MainController extends GLSurfaceView {
         mLocationServices.start();
 
 
+
     }
 
     public void surfaceCreated ( SurfaceHolder holder ) {
         super.surfaceCreated(holder);
+
     }
 
     public void surfaceDestroyed ( SurfaceHolder holder ) {
@@ -322,7 +328,29 @@ public class MainController extends GLSurfaceView {
         } catch (IOException e) {
             return null;
         }
-}
+    }
+    public void prepareARObject(){
+        List<Integer> arObjects = new ArrayList<>();
+        switch (mDataSet){
+            case 1:
+                arObjects.add(1);
+                arObjects.add(2);
+                arObjects.add(3);
+                break;
+            case 2:
+                arObjects.add(4);
+                arObjects.add(5);
+                arObjects.add(6);
+                break;
+            case 3:
+                arObjects.add(7);
+                arObjects.add(8);
+                break;
+            default:
+                break;
+        }
+        mGLRenderer.selectAR(arObjects);
+    }
     public void doStitching(){
         SensorManager.getRotationMatrixFromVector(mRotmat,mQuaternion);
         AsyncTask<Mat, Integer, Boolean> imageStitchingTask = new ImageStitchingTask();
@@ -347,7 +375,6 @@ public class MainController extends GLSurfaceView {
             Log.d("MainController","Use Location : "+deviceLocation.getLatitude()+" : "+deviceLocation.getLongitude()+" Angle : "+angle);
 
             mGLRenderer.initARObject(angle, deviceLocation, mAngleAdjustment);
-
             mFirstRun = false;
             mQuaternion[0] = 0f;
             mQuaternion[1] = 0f;
@@ -401,7 +428,6 @@ public class MainController extends GLSurfaceView {
             });
 
         }
-
         Mat rotationCVMat = new Mat();
         rotationCVMat.create(3, 3, CvType.CV_32F);
         for (int i = 0; i < 3; i++) {
@@ -433,20 +459,17 @@ public class MainController extends GLSurfaceView {
                         break;
                     }
                 }
-                Log.d("CaptureRequest","ISO : "+mLastSensorISO*i+" ShutterSpeed : "+mLastShutterSpeed/i);
                 mPreviewRequestBuilder.set(CONTROL_AE_MODE,CONTROL_AE_MODE_OFF);
                 mPreviewRequestBuilder.set(SENSOR_SENSITIVITY,mLastSensorISO*i);
                 mPreviewRequestBuilder.set(SENSOR_EXPOSURE_TIME,mLastShutterSpeed/i);
                 mAEReport = true;
             }
-
             updatePreview();
         }
         else {
             if(!mAsyncRunning)
                 mRunning = true;
             Log.d("MainController","Button Press, Still Running");
-
          }
     }
 
@@ -470,6 +493,7 @@ public class MainController extends GLSurfaceView {
         if(mSensorManager != null)
             mSensorManager.unregisterListener(mSensorListener);
         closeCamera();
+
     }
 
     private void openCamera() {
@@ -489,11 +513,10 @@ public class MainController extends GLSurfaceView {
 
                 StreamConfigurationMap configs = characteristics.get(
                         CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-                Log.d("CameraParam","Support OutputFormats "+Arrays.toString(configs.getOutputFormats()));
-                Log.d("CameraParam","Support OutputSizes "+Arrays.toString(configs.getOutputSizes(35)));
+                Log.d("CameraParam","Support OutputSizes"+Arrays.toString(configs.getOutputSizes(ImageReader.class)));
                 Log.d("CameraParam","CaptureResultKey :"+Arrays.toString(characteristics.getAvailableCaptureRequestKeys().toArray()));
 
-//                Log.d("CameraParam","Support : "+configs.isOutputSupportedFor(ImageReader.class)+","+configs.isOutputSupportedFor(mImageReader.getSurface()));
+                
                 Log.d("CameraParam","Format : "+Arrays.toString(configs.getOutputFormats()));
                 Log.d("CameraParam","Size : "+Arrays.toString(configs.getOutputSizes(ImageFormat.YV12)));
 
@@ -552,14 +575,16 @@ public class MainController extends GLSurfaceView {
             mBackgroundThread.join();
             mBackgroundThread = null;
             mBackgroundHandler = null;
-
         } catch (InterruptedException | NullPointerException e) {
             e.printStackTrace();
             mBackgroundThread = null;
             mBackgroundHandler = null;
         }
     }
-
+    public void setDataSet(int i){
+        mDataSet = i;
+        prepareARObject();
+    }
     private void createCameraPreviewSession() {
         try {
             Log.d("CameraCharacteristic", "createCameraPreviewSession");
@@ -695,7 +720,6 @@ public class MainController extends GLSurfaceView {
 //                Matrix.multiplyMM(temp, 0, Util.SWAP_X, 0, rotMat, 0);
 //                Matrix.multiplyMM(rotMat, 0, Util.SWAP_Z, 0, temp, 0);
                 mGLRenderer.setRotationMatrix(correctedRotMat);
-
                 if(!mAsyncRunning)
 
                     if(!mRunning) {
@@ -774,6 +798,7 @@ public class MainController extends GLSurfaceView {
 
         }
     }
+
 
 
 
