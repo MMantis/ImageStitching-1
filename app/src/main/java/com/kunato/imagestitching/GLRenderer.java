@@ -58,7 +58,8 @@ public class GLRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
     public float[] mHomography = {1,0,0,0,1,0,0,0,1};
     private boolean readInProgress = false;
     private StitchObject mStitch;
-
+    private List<ARObject> mShowAR = new ArrayList<>();
+    private boolean mRequestARUpdate = false;
     GLRenderer(MainController view) {
         mView = view;
     }
@@ -98,16 +99,33 @@ public class GLRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
         mTextureProcessed.setOnFrameAvailableListener(this);
 
         GLES31.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+        prepareAR();
         //(x (vertical),(horizontal)y,z)
         GLES31.glEnable(GLES31.GL_BLEND);
         GLES31.glBlendFunc(GLES31.GL_SRC_ALPHA, GLES31.GL_ONE_MINUS_SRC_ALPHA);
-        prepareARObject();
+
     }
-    public void prepareARObject(){
-        mARObject.add(new ARObject(this,1,"Sentan",34.732764, 135.734837));
-        mARObject.add(new ARObject(this,2,"IS",34.732118, 135.734693));
-        mARObject.add(new ARObject(this,3,"Dormitory",34.732039, 135.735305));
+    public void prepareAR(){
+        mARObject.add(new ARObject(mView,1,"Sentan",34.732764, 135.734837));
+        mARObject.add(new ARObject(mView,2,"IS",34.732118, 135.734693));
+        mARObject.add(new ARObject(mView,3,"Dormitory",34.732039, 135.735305));
+        mARObject.add(new ARObject(mView,4,"Entrance",34.731920, 135.731847));
+        mARObject.add(new ARObject(mView,5,"IS",34.732118, 135.734693));
+        mARObject.add(new ARObject(mView,6,"Bio",34.731207, 135.732818));
+        mARObject.add(new ARObject(mView,7,"Gakken-Nara-Tomigaoka",34.726720, 135.752003));
+        mARObject.add(new ARObject(mView,8,"Gakken-Kita-Ikoma",34.724670, 135.723473));
     }
+    public void selectAR(List<Integer> selected){
+        mShowAR.clear();
+        for(int i = 0 ; i < selected.size() ;i++){
+            for(int j = 0 ;j < mARObject.size() ; j++){
+                if(mARObject.get(j).mNumber == selected.get(i)){
+                    mShowAR.add(mARObject.get(j));
+                }
+            }
+        }
+    }
+
     public void initARObject(int angle, Location location, float adjustment){
         Log.d("GLRenderer","AddARObject");
         for(int i =  0 ; i < mARObject.size() ;i++){
@@ -124,6 +142,7 @@ public class GLRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
     }
     //Core function
     public void onDrawFrame ( GL10 unused ) {
+
         mFrame++;
         if(System.nanoTime() - mStartTime >= 1000000000){
             Log.v("FPS","fps : "+mFrame);
@@ -158,8 +177,9 @@ public class GLRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
 //        mCanvasObject.draw(mMVPMatrix);
         //Test mRotation
         mCanvasObjectProcessed.draw(mViewCanvasMatrix,mHomography);
-        for(int i = 0 ; i < mARObject.size() ; i++)
-            mARObject.get(i).draw(mRotationMatrix,mProjectionMatrix);
+        for(int i = 0 ; i < mShowAR.size() ; i++) {
+            mShowAR.get(i).draw(mRotationMatrix, mProjectionMatrix);
+        }
         GLES31.glFlush();
     }
 

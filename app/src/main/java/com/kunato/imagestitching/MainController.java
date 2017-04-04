@@ -45,7 +45,6 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -105,7 +104,6 @@ public class MainController extends GLSurfaceView {
     private boolean mAEReport = false;
     public byte[] mFrameByte;
     public boolean mAsyncRunning = false;
-    public boolean mAlign = false;
     public boolean mRunning = false;
     private boolean mFirstRun = true;
     public float[] mQuaternion = new float[4];
@@ -153,29 +151,6 @@ public class MainController extends GLSurfaceView {
 
                 doStitching();
             }
-            else if(mAlign){
-                mAlign = false;
-                Log.d("ImageReader","Align Start!");
-                //Note10.1
-//                Log.d("ImageReader","length : "+planes.length);
-//                Image.Plane Y = image.getPlanes()[0];
-//                Image.Plane U = image.getPlanes()[1];
-//                Image.Plane V = image.getPlanes()[2];
-//
-//                int Yb = Y.getBuffer().remaining();
-//                int Ub = U.getBuffer().remaining();
-//                int Vb = V.getBuffer().remaining();
-//                if(mFrameByte == null)
-//                    mFrameByte = new byte[Yb + Ub + Vb];
-//
-//                Y.getBuffer().get(mFrameByte, 0, Yb);
-//                U.getBuffer().get(mFrameByte, Yb, Ub);
-//                V.getBuffer().get(mFrameByte, Yb+ Ub, Vb);
-
-                //Nexus5x
-                mFrameByte = Util.readImage(image);
-                doAlign();
-            }
             image.close();
 
         }
@@ -186,17 +161,6 @@ public class MainController extends GLSurfaceView {
 
 
 
-
-    public void requireAlign(){
-        mAlign = true;
-    }
-
-
-
-    private void doAlign() {
-        AsyncTask<Mat, Integer, Boolean> aligningTask = new ImageAligningTask();
-        aligningTask.execute();
-    }
 
 
 
@@ -249,6 +213,9 @@ public class MainController extends GLSurfaceView {
     private Factory mFactory;
     LocationServices mLocationServices;
     private float mAngleAdjustment = 0.0f;
+    private boolean firstFrame = true;
+    public int mDataSet = 3;
+
     public MainController(Context context) {
         super(context);
         mFactory = Factory.getFactory(this);
@@ -260,6 +227,8 @@ public class MainController extends GLSurfaceView {
         setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
         mLocationServices = new LocationServices(this);
         mLocationServices.start();
+
+
 
     }
 
@@ -317,6 +286,28 @@ public class MainController extends GLSurfaceView {
             return null;
         }
     }
+    public void prepareARObject(){
+        List<Integer> arObjects = new ArrayList<>();
+        switch (mDataSet){
+            case 1:
+                arObjects.add(1);
+                arObjects.add(2);
+                arObjects.add(3);
+                break;
+            case 2:
+                arObjects.add(4);
+                arObjects.add(5);
+                arObjects.add(6);
+                break;
+            case 3:
+                arObjects.add(7);
+                arObjects.add(8);
+                break;
+            default:
+                break;
+        }
+        mGLRenderer.selectAR(arObjects);
+    }
     public void doStitching(){
         SensorManager.getRotationMatrixFromVector(mRotmat,mQuaternion);
         AsyncTask<Mat, Integer, Boolean> imageStitchingTask = new ImageStitchingTask();
@@ -325,14 +316,16 @@ public class MainController extends GLSurfaceView {
             Location deviceLocation;
             int angle;
             Object[] readLocation = tryReadLocation();
-            if(readLocation == null || !RESTORE_LOCATION) {
-                Log.d("MainController", "New Location");
+            if(readLocation == null || !RESTORE_LOCATION){
+                Log.d("MainController","New Location");
+
                 deviceLocation = (Location) locationAndRotation[0];
                 angle = (int) locationAndRotation[1];
                 writeLocation(deviceLocation,angle);
             }
             else{
                 Log.d("MainController","Used Location");
+
                 deviceLocation = (Location) readLocation[0];
                 angle = (int) readLocation[1];
             }
@@ -543,7 +536,10 @@ public class MainController extends GLSurfaceView {
             mBackgroundHandler = null;
         }
     }
-
+    public void setDataSet(int i){
+        mDataSet = i;
+        prepareARObject();
+    }
     private void createCameraPreviewSession() {
         try {
             Log.d("CameraCharacteristic", "createCameraPreviewSession");
@@ -749,30 +745,6 @@ public class MainController extends GLSurfaceView {
     }
 
 
-
-    private class ImageAligningTask extends AsyncTask<Mat, Integer, Boolean> {
-        protected Boolean doInBackground(Mat... objects) {
-            Log.d("AsyncTask","doInBackground");
-            Mat yv12 = new Mat(mReadSize.getHeight()*3/2, mReadSize.getWidth(), CvType.CV_8UC1);
-            yv12.put(0, 0, mFrameByte);
-            Mat rgb = new Mat(mReadSize.getWidth(), mReadSize.getHeight(),CvType.CV_8UC3);
-            Imgproc.cvtColor(yv12, rgb, mConvertType,3);
-            float[] rotMat = new float[16];
-            SensorManager.getRotationMatrixFromVector(rotMat, mQuaternion);
-            ImageStitchingNative.getNativeInstance().aligning(rgb,rotMat);
-            return true;
-        }
-
-        protected void onProgressUpdate(Integer... progress) {
-
-        }
-
-        protected void onPostExecute(Boolean bool) {
-
-            Log.i("GLSurface Connector","Algin Complete.");
-
-        }
-    }
 
 
 }
