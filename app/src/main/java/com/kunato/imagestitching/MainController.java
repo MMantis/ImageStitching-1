@@ -215,6 +215,7 @@ public class MainController extends GLSurfaceView {
     LocationServices mLocationServices;
     private float mAngleAdjustment = 0.0f;
     private boolean firstFrame = true;
+    private int mData = 3;
 
     public MainController(Context context) {
         super(context);
@@ -285,6 +286,28 @@ public class MainController extends GLSurfaceView {
             return null;
         }
     }
+    public void prepareARObject(){
+        List<ARObject> arObjects = new ArrayList<>();
+        switch (mData){
+            case 1:
+                arObjects.add(new ARObject(mGLRenderer,1,"Sentan",34.732764, 135.734837));
+                arObjects.add(new ARObject(mGLRenderer,2,"IS",34.732118, 135.734693));
+                arObjects.add(new ARObject(mGLRenderer,3,"Dormitory",34.732039, 135.735305));
+                break;
+            case 2:
+                arObjects.add(new ARObject(mGLRenderer,1,"Entrance",34.731920, 135.731847));
+                arObjects.add(new ARObject(mGLRenderer,2,"IS",34.732118, 135.734693));
+                arObjects.add(new ARObject(mGLRenderer,3,"Bio",34.731207, 135.732818));
+                break;
+            case 3:
+                arObjects.add(new ARObject(mGLRenderer,1,"Gakken-Nara-Tomigaoka",34.726720, 135.752003));
+                arObjects.add(new ARObject(mGLRenderer,2,"Gakken-Kita-Ikoma",34.724670, 135.723473));
+                break;
+            default:
+                break;
+        }
+        mGLRenderer.prepareARObject(arObjects);
+    }
     public void doStitching(){
         SensorManager.getRotationMatrixFromVector(mRotmat,mQuaternion);
         AsyncTask<Mat, Integer, Boolean> imageStitchingTask = new ImageStitchingTask();
@@ -307,7 +330,7 @@ public class MainController extends GLSurfaceView {
                 angle = (int) readLocation[1];
             }
             Log.d("MainController","Use Location : "+deviceLocation.getLatitude()+" : "+deviceLocation.getLongitude()+" Angle : "+angle);
-
+            prepareARObject();
             mGLRenderer.initARObject(angle, deviceLocation, mAngleAdjustment);
             mFirstRun = false;
             mQuaternion[0] = 0f;

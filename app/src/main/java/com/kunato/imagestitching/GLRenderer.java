@@ -104,12 +104,10 @@ public class GLRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
         //(x (vertical),(horizontal)y,z)
         GLES31.glEnable(GLES31.GL_BLEND);
         GLES31.glBlendFunc(GLES31.GL_SRC_ALPHA, GLES31.GL_ONE_MINUS_SRC_ALPHA);
-        prepareARObject();
+
     }
-    public void prepareARObject(){
-        mARObject.add(new ARObject(this,1,"Sentan",34.732764, 135.734837));
-        mARObject.add(new ARObject(this,2,"IS",34.732118, 135.734693));
-        mARObject.add(new ARObject(this,3,"Dormitory",34.732039, 135.735305));
+    public void prepareARObject(List<ARObject> arObjects){
+        mARObject = arObjects;
     }
     public void initARObject(int angle, Location location, float adjustment){
         Log.d("GLRenderer","AddARObject");
