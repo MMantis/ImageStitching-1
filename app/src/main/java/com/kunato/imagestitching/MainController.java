@@ -45,7 +45,6 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -215,7 +214,7 @@ public class MainController extends GLSurfaceView {
     LocationServices mLocationServices;
     private float mAngleAdjustment = 0.0f;
     private boolean firstFrame = true;
-    private int mData = 3;
+    public int mDataSet = 3;
 
     public MainController(Context context) {
         super(context);
@@ -287,26 +286,26 @@ public class MainController extends GLSurfaceView {
         }
     }
     public void prepareARObject(){
-        List<ARObject> arObjects = new ArrayList<>();
-        switch (mData){
+        List<Integer> arObjects = new ArrayList<>();
+        switch (mDataSet){
             case 1:
-                arObjects.add(new ARObject(mGLRenderer,1,"Sentan",34.732764, 135.734837));
-                arObjects.add(new ARObject(mGLRenderer,2,"IS",34.732118, 135.734693));
-                arObjects.add(new ARObject(mGLRenderer,3,"Dormitory",34.732039, 135.735305));
+                arObjects.add(1);
+                arObjects.add(2);
+                arObjects.add(3);
                 break;
             case 2:
-                arObjects.add(new ARObject(mGLRenderer,1,"Entrance",34.731920, 135.731847));
-                arObjects.add(new ARObject(mGLRenderer,2,"IS",34.732118, 135.734693));
-                arObjects.add(new ARObject(mGLRenderer,3,"Bio",34.731207, 135.732818));
+                arObjects.add(4);
+                arObjects.add(5);
+                arObjects.add(6);
                 break;
             case 3:
-                arObjects.add(new ARObject(mGLRenderer,1,"Gakken-Nara-Tomigaoka",34.726720, 135.752003));
-                arObjects.add(new ARObject(mGLRenderer,2,"Gakken-Kita-Ikoma",34.724670, 135.723473));
+                arObjects.add(7);
+                arObjects.add(8);
                 break;
             default:
                 break;
         }
-        mGLRenderer.prepareARObject(arObjects);
+        mGLRenderer.selectAR(arObjects);
     }
     public void doStitching(){
         SensorManager.getRotationMatrixFromVector(mRotmat,mQuaternion);
@@ -330,7 +329,7 @@ public class MainController extends GLSurfaceView {
                 angle = (int) readLocation[1];
             }
             Log.d("MainController","Use Location : "+deviceLocation.getLatitude()+" : "+deviceLocation.getLongitude()+" Angle : "+angle);
-            prepareARObject();
+
             mGLRenderer.initARObject(angle, deviceLocation, mAngleAdjustment);
             mFirstRun = false;
             mQuaternion[0] = 0f;
@@ -446,6 +445,8 @@ public class MainController extends GLSurfaceView {
         startBackgroundThread();
         openCamera();
 
+
+
     }
 
     public void Pause() {
@@ -542,7 +543,10 @@ public class MainController extends GLSurfaceView {
             mBackgroundHandler = null;
         }
     }
-
+    public void setDataSet(int i){
+        mDataSet = i;
+        prepareARObject();
+    }
     private void createCameraPreviewSession() {
         try {
             Log.d("CameraCharacteristic", "createCameraPreviewSession");

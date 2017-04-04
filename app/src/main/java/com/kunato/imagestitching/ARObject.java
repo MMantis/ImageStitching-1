@@ -109,22 +109,20 @@ public class ARObject {
     private int[] mTextures = new int[2];
     private int mTextureCoordinateHandle;
     private int mProjectionMatrixHandle;
-    private GLRenderer glRenderer;
     private boolean mCameraPositionSet = false;
-    private int mNumber;
+    public int mNumber;
     private String mName;
     private double mRawAngle = 0.0;
 
-    public ARObject(GLRenderer renderer,int number, String name,double latitude, double longitude) {
+    public ARObject(MainController view,int number, String name,double latitude, double longitude) {
         mName = name;
-    
+
         //mock data
         mLocalLocation = new Location("");
         mLocalLocation.setLatitude(latitude);
         mLocalLocation.setLongitude(longitude);
-        glRenderer = renderer;
         mNumber = number;
-        Context context = renderer.mView.getActivity();
+        Context context = view.getActivity();
         ObjReader.readAll(context,"sign2");
         mVertexCoords = new float[ObjReader.mVertices.size()* ObjReader.COORD_PER_VERTEX];
         mTextureCoords = new float[ObjReader.mTextures.size()* ObjReader.COORD_PER_TEXTURE];
