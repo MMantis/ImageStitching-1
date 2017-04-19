@@ -308,6 +308,22 @@ public class MainController extends GLSurfaceView {
         }
         mGLRenderer.selectAR(arObjects);
     }
+    public void prepareBackground(){
+        switch (mDataSet){
+            case 1:
+                mGLRenderer.getSphere().loadGLTexture(getContext(),R.drawable.ladybug_20170329_1,true);
+                break;
+            case 2:
+                mGLRenderer.getSphere().loadGLTexture(getContext(),R.drawable.ladybug_20170329_2,true);
+                break;
+            case 3:
+                mGLRenderer.getSphere().loadGLTexture(getContext(),R.drawable.ladybug_20170329_3,true);
+                break;
+            default:
+                mGLRenderer.getSphere().loadGLTexture(getContext(),R.drawable.ladybug_20170329_1,false);
+                break;
+        }
+    }
     public void doStitching(){
         SensorManager.getRotationMatrixFromVector(mRotmat,mQuaternion);
         AsyncTask<Mat, Integer, Boolean> imageStitchingTask = new ImageStitchingTask();
@@ -539,6 +555,8 @@ public class MainController extends GLSurfaceView {
     public void setDataSet(int i){
         mDataSet = i;
         prepareARObject();
+        prepareBackground();
+
     }
     private void createCameraPreviewSession() {
         try {
@@ -745,30 +763,6 @@ public class MainController extends GLSurfaceView {
     }
 
 
-
-    private class ImageAligningTask extends AsyncTask<Mat, Integer, Boolean> {
-        protected Boolean doInBackground(Mat... objects) {
-            Log.d("AsyncTask","doInBackground");
-            Mat yv12 = new Mat(mReadSize.getHeight()*3/2, mReadSize.getWidth(), CvType.CV_8UC1);
-            yv12.put(0, 0, mFrameByte);
-            Mat rgb = new Mat(mReadSize.getWidth(), mReadSize.getHeight(),CvType.CV_8UC3);
-            Imgproc.cvtColor(yv12, rgb, mConvertType,3);
-            float[] rotMat = new float[16];
-            SensorManager.getRotationMatrixFromVector(rotMat, mQuaternion);
-            ImageStitchingNative.getNativeInstance().aligning(rgb,rotMat);
-            return true;
-        }
-
-        protected void onProgressUpdate(Integer... progress) {
-
-        }
-
-        protected void onPostExecute(Boolean bool) {
-
-            Log.i("GLSurface Connector","Align Complete.");
-
-        }
-    }
 
 
 }

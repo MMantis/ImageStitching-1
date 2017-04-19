@@ -109,7 +109,7 @@ public class SphereObject {
     public SphereObject(GLRenderer renderer,int width,int height) {
         mWidth = width;
         mHeight = height;
-        Context context = renderer.mView.getActivity();
+        Context context = renderer.mView.getContext();
         glRenderer = renderer;
         mSphereShape = new SphereShape(20,210,1);
         mSphereBuffer = mSphereShape.getVertices();
@@ -119,7 +119,8 @@ public class SphereObject {
         mProgram = Util.loadShader(vertexShaderCode, fragmentShaderCode);
 
         createFBO();
-        loadGLTexture(context, R.drawable.ladybug_20170329_1, true);
+        genGLTexture();
+        //loadGLTexture(context,R.drawable.ladybug_20170329_3,true);
 
 
     }
@@ -156,12 +157,7 @@ public class SphereObject {
         GLES31.glBindRenderbuffer(GLES31.GL_RENDERBUFFER, 0);
         GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, 0);
     }
-
-    public void loadGLTexture(final Context context, final int texture, boolean show) {
-        BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inSampleSize = 4;
-        final Bitmap bitmap = BitmapFactory.decodeResource(context.getResources(), texture, options);
-
+    public void genGLTexture(){
         GLES31.glGenTextures(1, this.mTextures, 0);
         GLES31.glActiveTexture(GLES31.GL_TEXTURE0);
         GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, this.mTextures[0]);
@@ -169,8 +165,14 @@ public class SphereObject {
         GLES31.glTexParameterf(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_MAG_FILTER, GLES31.GL_NEAREST);
         GLES31.glTexParameterf(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_WRAP_S,GLES31.GL_CLAMP_TO_EDGE);
         GLES31.glTexParameterf(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_WRAP_T,GLES31.GL_CLAMP_TO_EDGE);
-        if(show)
-            mockTexImage2D(bitmap);
+
+    }
+    public void loadGLTexture(final Context context, final int texture, boolean show) {
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inSampleSize = 4;
+        mTexRequireUpdate = true;
+        mQueueBitmap = BitmapFactory.decodeResource(context.getResources(), texture, options);
+
     }
 
 
@@ -187,12 +189,7 @@ public class SphereObject {
         bitmap.recycle();
     }
 
-    public void updateBitmap(Bitmap bitmap,float[] area){
-        this.mArea = area;
-        mTexRequireUpdate = true;
-        mQueueBitmap = bitmap;
-        Log.i("GLSphere", "Bitmap waiting for updated");
-    }
+
 
     public void updateArea(float[] area){
         this.mArea = area;
