@@ -423,8 +423,11 @@ public class MainController extends GLSurfaceView {
             updatePreview();
         }
         else {
-            if(!mAsyncRunning)
-                mRunning = true;
+            if(!mAsyncRunning) {
+                if(mLocationServices.mSupportOrientation) {
+                    mRunning = true;
+                }
+            }
             Log.d("MainController","Button Press, Still Running");
          }
     }
@@ -673,7 +676,7 @@ public class MainController extends GLSurfaceView {
                 mGLRenderer.setRotationMatrix(correctedRotMat);
                 if(!mAsyncRunning)
                     if(!mRunning)
-                        if(ImageStitchingNative.getNativeInstance().keyFrameSelection(rotMat) == 1)
+                        if(mLocationServices.mSupportOrientation && ImageStitchingNative.getNativeInstance().keyFrameSelection(rotMat) == 1)
                             mRunning = true;
             }
             if (event.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR){
