@@ -468,7 +468,9 @@ public class MainController extends GLSurfaceView {
         }
         else {
             if(!mAsyncRunning)
-                mRunning = true;
+                if(mLocationServices.mSupportOrientation) {
+                    mRunning = true;
+                }
             Log.d("MainController","Button Press, Still Running");
          }
     }
@@ -728,7 +730,7 @@ public class MainController extends GLSurfaceView {
                         float axisZ = event.values[2];
                         float omegaMagnitude = (axisX * axisX + axisY * axisY + axisZ * axisZ);
                         //Log.d("SensorListener","Gyro Magnitude : "+omegaMagnitude);
-                        if (mUsingAllFrame || omegaMagnitude < 0.01) {
+                        if (mLocationServices.mSupportOrientation && (mUsingAllFrame || omegaMagnitude < 0.01)) {
                             if (ImageStitchingNative.getNativeInstance().keyFrameSelection(rotMat) == 1) {
                                 mRunning = true;
                             }

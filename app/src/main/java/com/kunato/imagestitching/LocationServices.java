@@ -15,6 +15,7 @@ import android.location.LocationManager;
 import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -37,6 +38,49 @@ import java.util.Date;
 public class LocationServices {
     int mCurrentAngle = 0;
     float[] mCameraRotation = new float[9];
+    public boolean mSupportOrientation = false;
+    private SensorEventListener mOrientationListener = new SensorEventListener() {
+        Toast toast;
+        @Override
+        public void onSensorChanged(SensorEvent event) {
+            if(event.sensor.getType() == Sensor.TYPE_ORIENTATION){
+                String msg = "";
+                if((event.values[1] < -100 || event.values[1] > -80) && event.values[2] > -10 && event.values[2] < 10 ){
+                    msg = "Pan the Device Vertically ";
+                    Log.d("Orientation",Arrays.toString(event.values));
+                    mSupportOrientation = false;
+                    try{ toast.getView().isShown();
+                        toast.setText(msg);
+                    } catch (Exception e) {
+                        toast = Toast.makeText(mMainController.getContext(), msg, Toast.LENGTH_SHORT);
+                    }
+                    toast.show();  //finally display it
+                }
+                else if(event.values[2] < -10 || event.values[2] > 10){
+                    msg = "Landscape Orientation is not supported";
+                    Log.d("Orientation",Arrays.toString(event.values));
+                    mSupportOrientation = false;
+                    try{ toast.getView().isShown();
+                        toast.setText(msg);
+                    } catch (Exception e) {
+                        toast = Toast.makeText(mMainController.getContext(), msg, Toast.LENGTH_SHORT);
+                    }
+                    toast.show();  //finally display it
+                }
+                else{
+                    mSupportOrientation = true;
+                    if(toast != null)
+                        toast.cancel();
+                }
+            }
+
+        }
+
+        @Override
+        public void onAccuracyChanged(Sensor sensor, int i) {
+
+        }
+    };
     private SensorEventListener mCompassListener = new SensorEventListener() {
         static final float RAD_2_DEGREE = (float) (180.0f / Math.PI);
         float[] mGravity;
@@ -136,6 +180,7 @@ public class LocationServices {
         mSensorManager.registerListener(mCompassListener, mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorManager.SENSOR_DELAY_GAME);
         mSensorManager.registerListener(mCompassListener, mSensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR), SensorManager.SENSOR_DELAY_GAME);
         mSensorManager.registerListener(mCompassListener, mSensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION), SensorManager.SENSOR_DELAY_NORMAL);
+        mSensorManager.registerListener(mOrientationListener, mSensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION),SensorManager.SENSOR_DELAY_NORMAL);
     }
 
     public LocationServices(MainController controller) {
