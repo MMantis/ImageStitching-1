@@ -46,7 +46,7 @@ public class LocationServices {
                 String msg = "";
                 if((event.values[1] < -100 || event.values[1] > -80) && event.values[2] > -10 && event.values[2] < 10 ){
                     msg = "Pan the Device Vertically ";
-                    Log.d("Orientation",Arrays.toString(event.values));
+//                    Log.d("Orientation",Arrays.toString(event.values));
                     mSupportOrientation = false;
                     try{ toast.getView().isShown();
                         toast.setText(msg);
@@ -55,17 +55,17 @@ public class LocationServices {
                     }
                     toast.show();  //finally display it
                 }
-                else if(event.values[2] < -10 || event.values[2] > 10){
-                    msg = "Landscape Orientation is not supported";
-                    Log.d("Orientation",Arrays.toString(event.values));
-                    mSupportOrientation = false;
-                    try{ toast.getView().isShown();
-                        toast.setText(msg);
-                    } catch (Exception e) {
-                        toast = Toast.makeText(mMainController.getContext(), msg, Toast.LENGTH_SHORT);
-                    }
-                    toast.show();  //finally display it
-                }
+//                else if(event.values[2] < -10 || event.values[2] > 10){
+//                    msg = "Landscape Orientation is not supported";
+////                    Log.d("Orientation",Arrays.toString(event.values));
+//                    mSupportOrientation = false;
+//                    try{ toast.getView().isShown();
+//                        toast.setText(msg);
+//                    } catch (Exception e) {
+//                        toast = Toast.makeText(mMainController.getContext(), msg, Toast.LENGTH_SHORT);
+//                    }
+//                    toast.show();  //finally display it
+//                }
                 else{
                     mSupportOrientation = true;
                     if(toast != null)

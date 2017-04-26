@@ -490,7 +490,7 @@ vector<Rect> findROI(float warped_image_scale,std::vector<ImagePackage> p_img){
 				r_kinv[q*3+s] = r_kinv_mat.at<float>(q,s);
 			}
 		}
-		__android_log_print(ANDROID_LOG_DEBUG,"C++ FindROI"," Size : %d %d",p_img[i].full_image.cols,p_img[i].full_image.rows);
+		//__android_log_print(ANDROID_LOG_DEBUG,"C++ FindROI"," Size : %d %d",p_img[i].full_image.cols,p_img[i].full_image.rows);
 		for(int x = 0 ; x < p_img[i].full_image.rows;x++){
 
 			vec[0] = 0;
@@ -547,11 +547,11 @@ vector<Rect> findROI(float warped_image_scale,std::vector<ImagePackage> p_img){
 			if(v > br_y) br_y = v;
 		}
 
-		__android_log_print(ANDROID_LOG_DEBUG,"C++ FindROI","%f %f %f %f",tl_x,tl_y,br_x,br_y);
+		//__android_log_print(ANDROID_LOG_DEBUG,"C++ FindROI","%f %f %f %f",tl_x,tl_y,br_x,br_y);
 		rois.push_back(Rect(Point(tl_x,tl_y),Point(br_x,br_y)));
 	}
 	clock_t c_t1 = std::clock();
-	__android_log_print(ANDROID_LOG_DEBUG,"C++ FindROI"," %lf %d",(double)(c_t1-c_t0)/CLOCKS_PER_SEC,count);
+	//__android_log_print(ANDROID_LOG_DEBUG,"C++ FindROI"," %lf %d",(double)(c_t1-c_t0)/CLOCKS_PER_SEC,count);
 	return rois;
 }
 
@@ -839,7 +839,7 @@ JNIEXPORT jint JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativ
 		}
 	}
 	for(int i = 0 ; i < images.size() ; i++){
-		rfs << "i1" << images[i].param.R;
+		rfs << "R_before" << images[i].param.R;
 	}
 	vector<CameraParams> camera_set(2);
 	camera_set[0] = cameras[nearest_image];
@@ -858,6 +858,7 @@ JNIEXPORT jint JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativ
 	}
 	cameras[images.size()-1].R = camera_set[1].R;
   	images[images.size()-1].param.R = camera_set[1].R;
+
 
 #else
 	minimizeRotation(features,pairwise_matches,cameras);
@@ -913,7 +914,9 @@ JNIEXPORT jint JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativ
 		roiRot.at<int>(i,1) = rects[i].y;
 		roiRot.at<int>(i,2) = rects[i].width;
 		roiRot.at<int>(i,3) = rects[i].height;
+
 	}
+	rfs << "ROI" << roiRot;
 	Rect result_rect = findResultROI(rects);
 	work_width = (warped_image_scale ) * M_PI * 2;
 
@@ -951,7 +954,6 @@ JNIEXPORT jint JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativ
         seam_finder->find(images_warped,corners,masks_warped);
 		__android_log_print(ANDROID_LOG_DEBUG,"C++ Stitching","Full Seamfinder");
     }
-
     else
     {
     vector<int> overlap_index = findOverlap(corners,masks_size);
@@ -987,7 +989,7 @@ JNIEXPORT jint JNICALL Java_com_kunato_imagestitching_ImageStitchingNative_nativ
 
 	rfs << "k" << images[0].param.K();
     for(int i = 0 ; i < images.size() ; i++){
-        rfs << "i2" << images[i].param.R;
+        rfs << "R_after" << images[i].param.R;
     }
     for(int i = 0; i < 4 ; i++){
         for(int j = 0; j < 4 ;j++){
