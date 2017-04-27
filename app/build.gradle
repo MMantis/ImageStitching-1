@@ -3,14 +3,15 @@ apply plugin: 'com.android.application'
 android {
     compileSdkVersion 23
     buildToolsVersion "24.0.1"
-
     defaultConfig {
         applicationId "com.kunato.iar.normal"
         minSdkVersion 22
         targetSdkVersion 22
         externalNativeBuild {
-            ndkBuild {
+            cmake {
                 abiFilters "armeabi-v7a"
+                cppFlags "-std=c++11","-O3","-frtti"
+                arguments "-DANDROID_ARM_NEON=TRUE","-DANDROID_STL=gnustl_static"
             }
         }
 
@@ -20,12 +21,11 @@ android {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
-''
     }
 
-    externalNativeBuild{
-        ndkBuild{
-            path "src/main/jni/Android.mk"
+    externalNativeBuild {
+        cmake {
+            path "src/main/jni/CMakeLists.txt"
         }
     }
 
