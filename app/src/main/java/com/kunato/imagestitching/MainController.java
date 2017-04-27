@@ -93,8 +93,8 @@ public class MainController extends GLSurfaceView {
     //Nexus5x = 1080,1920
     //Note10.1 = 1080,1440
 //    private Size mReadSize = new Size(1080,1440);
-//    private Size mReadSize = new Size(1920,1080);
-    private Size mReadSize = new Size(2688,1512);
+    private Size mReadSize = new Size(1920,1080);
+//    private Size mReadSize = new Size(2688,1512);
     private Size mPreviewSize = new Size(1920,1080);
     private int mConvertType = Imgproc.COLOR_YUV2BGR_I420;
 //    private int mConvertType = Imgproc.COLOR_YUV2BGR_NV12;

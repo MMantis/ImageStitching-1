@@ -116,7 +116,7 @@ struct BaseErrorOneVector {
         double *diff_array = diff.data();
         ceres::RotationMatrixToQuaternion(diff_array,diff_quat);
         double angle = 2 * asin(diff_quat[3]);
-        __android_log_print(ANDROID_LOG_DEBUG,"Ceres Minimize","Diff Angle [%lf]",angle*180.0/M_PI);
+//        __android_log_print(ANDROID_LOG_DEBUG,"Ceres Minimize","Diff Angle [%lf]",angle*180.0/M_PI);
 
         double multiplier = 200 - (200 * (log(num_point)/log(50)));
         if(multiplier > 0){
@@ -129,7 +129,7 @@ struct BaseErrorOneVector {
         residuals[0] = multiplier * abs(angle);
 //        residuals[0] = 0;
 
-        __android_log_print(ANDROID_LOG_DEBUG,"Ceres Minimize","Bases Residuals : %lf",residuals[0]);
+//        __android_log_print(ANDROID_LOG_DEBUG,"Ceres Minimize","Bases Residuals : %lf",residuals[0]);
         return true;
     }
     // Factory to hide the construction of the CostFunction object from

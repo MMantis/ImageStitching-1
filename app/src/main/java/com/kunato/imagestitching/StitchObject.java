@@ -48,7 +48,7 @@ public class StitchObject {
     private final String fragmentShaderCode = "" +
             "#version 310 es\n" +
             "#define M_PI 3.1415926535897932384626433832795\n" +
-            "#define SCALE 1468.803406*1.4\n"+
+            "#define SCALE 1468.803406\n"+
             "precision highp float;\n" +
             "precision highp int;\n" +
             "uniform int length;\n" +

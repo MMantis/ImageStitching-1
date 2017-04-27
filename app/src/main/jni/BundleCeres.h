@@ -10,7 +10,6 @@
 #include <fstream>
 #include <string>
 #include <iterator>
-#include <android/log.h>
 #include "opencv2/calib3d/calib3d.hpp"
 #include "ceres/ceres.h"
 #include "ceres/rotation.h"

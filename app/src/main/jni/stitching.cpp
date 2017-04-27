@@ -460,6 +460,8 @@ vector<int> findOverlap(vector<Point2i> p,vector<Size> size){
 
 vector<Rect> findROI(float warped_image_scale,std::vector<ImagePackage> p_img){
 	double compose_work_aspect = compose_scale / work_scale;
+
+	__android_log_print(ANDROID_LOG_DEBUG,"ROI","WarpImage %f, %lf",warped_image_scale,compose_work_aspect);
 	clock_t c_t0 = std::clock();
 	vector<Rect> rois;
 	float u,v,w;
